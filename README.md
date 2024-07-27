@@ -20,7 +20,7 @@ The authentication service is designed as a RESTful API using Go. It implements 
 
 ## API Endpoints
 
-### 1. /auth/signup (POST)
+### 1. `/auth/signup` (POST)
 
 - **Purpose**: Register a new user
 - **Input**: Email, password, optional user details
@@ -32,7 +32,7 @@ The authentication service is designed as a RESTful API using Go. It implements 
   - Trigger verification email
 - **Response**: User ID and message (do not auto-login)
 
-### 2. /auth/login (POST)
+### 2. `/auth/login` (POST)
 
 - **Purpose**: Authenticate a user
 - **Input**: Email, password
@@ -42,7 +42,7 @@ The authentication service is designed as a RESTful API using Go. It implements 
   - Generate access and refresh tokens
 - **Response**: Access token, refresh token, user info
 
-### 3. /auth/logout (POST)
+### 3. `/auth/logout` (POST)
 
 - **Purpose**: Log out a user
 - **Input**: Refresh token
@@ -51,7 +51,7 @@ The authentication service is designed as a RESTful API using Go. It implements 
   - Optionally blacklist access token
 - **Response**: Success message
 
-### 4. /auth/token/refresh (POST)
+### 4. `/auth/token/refresh` (POST)
 
 - **Purpose**: Obtain a new access token
 - **Input**: Refresh token
@@ -61,7 +61,7 @@ The authentication service is designed as a RESTful API using Go. It implements 
   - Optionally rotate refresh token
 - **Response**: New access token, optionally new refresh token
 
-### 5. /auth/password/reset-request (POST)
+### 5. `/auth/password/reset-request` (POST)
 
 - **Purpose**: Request a password reset
 - **Input**: Email
@@ -70,7 +70,7 @@ The authentication service is designed as a RESTful API using Go. It implements 
   - Trigger reset email
 - **Response**: Success message
 
-### 6. /auth/password/reset (POST)
+### 6. `/auth/password/reset` (POST)
 
 - **Purpose**: Reset password
 - **Input**: Reset token, new password
@@ -80,7 +80,7 @@ The authentication service is designed as a RESTful API using Go. It implements 
   - Invalidate all existing sessions for the user
 - **Response**: Success message
 
-### 7. /auth/verify-email (GET)
+### 7. `/auth/verify-email` (GET)
 
 - **Purpose**: Verify user's email
 - **Input**: Verification token (as query parameter)
@@ -89,7 +89,7 @@ The authentication service is designed as a RESTful API using Go. It implements 
   - Mark email as verified
 - **Response**: Success message or redirect
 
-### 8. /auth/resend-verification (POST)
+### 8. `/auth/resend-verification` (POST)
 
 - **Purpose**: Resend verification email
 - **Input**: Email
@@ -98,21 +98,21 @@ The authentication service is designed as a RESTful API using Go. It implements 
   - Trigger verification email
 - **Response**: Success message
 
-### 9. /auth/me (GET)
+### 9. `/auth/me` (GET)
 
 - **Purpose**: Get current user's details
 - **Input**: Access token (in Authorization header)
 - **Process**: Retrieve user details from database
 - **Response**: User details
 
-### 10. /auth/update-profile (PUT)
+### 10. `/auth/update-profile` (PUT)
 
 - **Purpose**: Update user profile
 - **Input**: Access token, updated profile information
 - **Process**: Update user information in database
 - **Response**: Updated user details
 
-### 11. /auth/.well-known/jwks.json (GET)
+### 11. `/auth/.well-known/jwks.json` (GET)
 
 - **Purpose**: Provide JWKS (JSON Web Key Set)
 - **Process**: Return current public keys used for token verification
