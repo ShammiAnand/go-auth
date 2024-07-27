@@ -9,11 +9,6 @@
 5. [Database Design](#database-design)
 6. [Email Integration](#email-integration)
 7. [RBAC Considerations](#rbac-considerations)
-8. [Scalability Considerations](#scalability-considerations)
-9. [Security Considerations](#security-considerations)
-10. [Testing Strategy](#testing-strategy)
-11. [Documentation](#documentation)
-12. [Deployment and DevOps](#deployment-and-devops)
 
 ## Introduction
 
@@ -299,46 +294,3 @@ While not initially implemented, design the system to easily incorporate RBAC la
 1. Use the roles and permissions tables defined in the database schema
 2. Implement middleware to check roles/permissions from JWT claims
 3. Design API endpoints for role and permission management (to be implemented later)
-
-## Scalability Considerations
-
-1. Use connection pooling for databases
-2. Implement caching strategies (e.g., caching frequently accessed user data in Redis)
-3. Design the service to be stateless for easy horizontal scaling
-4. Use asynchronous processing for non-critical tasks (e.g., sending emails)
-5. Implement rate limiting to prevent abuse
-
-## Security Considerations
-
-1. Use HTTPS for all communications
-2. Implement proper input validation and sanitization
-3. Use secure password hashing (bcrypt)
-4. Implement token revocation mechanism
-5. Use secure token storage methods
-6. Implement proper error handling without leaking sensitive information
-7. Log all authentication events
-8. Implement real-time monitoring for suspicious activities
-
-## Testing Strategy
-
-1. Unit Tests: Test individual functions and methods
-2. Integration Tests: Test API endpoints and database interactions
-3. Security Tests: Regular security audits and penetration testing
-
-## Documentation
-
-1. API Documentation: Use Swagger/OpenAPI
-2. Code Documentation: Follow Go's documentation practices
-3. Architecture Documentation: Maintain up-to-date architecture diagrams and design decisions
-
-## Deployment and DevOps
-
-1. Containerization: Use Docker
-2. CI/CD: Implement CI/CD pipelines (e.g., GitLab CI, GitHub Actions)
-3. Monitoring: Set up application and infrastructure monitoring
-4. Logging: Implement centralized logging
-5. Backup and Recovery: Regular backups for PostgreSQL, use Redis persistence
-
----
-
-This README provides a comprehensive guide for building the Go Authentication Microservice. Follow each section carefully, and use it as a checklist to ensure all components are properly implemented. Remember to adapt the design to your specific requirements and continuously update this document as the project evolves.
