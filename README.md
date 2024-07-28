@@ -2,17 +2,12 @@
 
 ## Table of Contents
 
-1. [Introduction](#introduction)
-2. [Architecture Overview](#architecture-overview)
-3. [API Endpoints](#api-endpoints)
-4. [JWT and JWKS Implementation](#jwt-and-jwks-implementation)
-5. [Database Design](#database-design)
-6. [Email Integration](#email-integration)
-7. [RBAC Considerations](#rbac-considerations)
-
-## Introduction
-
-This document serves as a comprehensive guide for building a modular, scalable, and secure authentication microservice using Go. It covers all aspects of the service, including API design, database architecture, JWT implementation, email integration, and best practices for security and scalability.
+1. [Architecture Overview](#architecture-overview)
+2. [API Endpoints](#api-endpoints)
+3. [JWT and JWKS Implementation](#jwt-and-jwks-implementation)
+4. [Database Design](#database-design)
+5. [Email Integration](#email-integration)
+6. [RBAC Considerations](#rbac-considerations)
 
 ## Architecture Overview
 
