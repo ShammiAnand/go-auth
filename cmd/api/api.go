@@ -6,6 +6,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"github.com/shammianand/go-auth/ent"
+	a "github.com/shammianand/go-auth/internal/auth"
 	"github.com/shammianand/go-auth/internal/handlers/auth"
 	"github.com/shammianand/go-auth/internal/middleware"
 	"github.com/shammianand/go-auth/internal/storage"
@@ -36,6 +37,11 @@ func (s *APIServer) Run() error {
 
 	router := http.NewServeMux()
 	subrouter := utils.Subrouter(router, "/api/v1")
+
+	err = a.InitializeKeys()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	authService := auth.NewHandler(s.client, s.cache)
 	authService.RegisterRoutes(subrouter)
