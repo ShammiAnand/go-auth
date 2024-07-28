@@ -8,12 +8,14 @@ import (
 )
 
 func main() {
-	client, err := storage.DBConnect()
+	entClient, err := storage.DBConnect()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	authServer := api.NewAPIServer(":42069", client)
+	redisDB := storage.GetRedisClient()
+
+	authServer := api.NewAPIServer(":42069", entClient, redisDB)
 	if err := authServer.Run(); err != nil {
 		log.Fatal(err)
 	}
