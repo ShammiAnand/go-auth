@@ -12,53 +12,48 @@ import (
 )
 
 // ID filters vertices based on their ID field.
-func ID(id int) predicate.Users {
+func ID(id uuid.UUID) predicate.Users {
 	return predicate.Users(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id int) predicate.Users {
+func IDEQ(id uuid.UUID) predicate.Users {
 	return predicate.Users(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id int) predicate.Users {
+func IDNEQ(id uuid.UUID) predicate.Users {
 	return predicate.Users(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...int) predicate.Users {
+func IDIn(ids ...uuid.UUID) predicate.Users {
 	return predicate.Users(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...int) predicate.Users {
+func IDNotIn(ids ...uuid.UUID) predicate.Users {
 	return predicate.Users(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id int) predicate.Users {
+func IDGT(id uuid.UUID) predicate.Users {
 	return predicate.Users(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id int) predicate.Users {
+func IDGTE(id uuid.UUID) predicate.Users {
 	return predicate.Users(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id int) predicate.Users {
+func IDLT(id uuid.UUID) predicate.Users {
 	return predicate.Users(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id int) predicate.Users {
+func IDLTE(id uuid.UUID) predicate.Users {
 	return predicate.Users(sql.FieldLTE(FieldID, id))
-}
-
-// UUID applies equality check predicate on the "uuid" field. It's identical to UUIDEQ.
-func UUID(v uuid.UUID) predicate.Users {
-	return predicate.Users(sql.FieldEQ(FieldUUID, v))
 }
 
 // Email applies equality check predicate on the "email" field. It's identical to EmailEQ.
@@ -114,46 +109,6 @@ func PasswordResetToken(v string) predicate.Users {
 // PasswordResetTokenExpiry applies equality check predicate on the "password_reset_token_expiry" field. It's identical to PasswordResetTokenExpiryEQ.
 func PasswordResetTokenExpiry(v time.Time) predicate.Users {
 	return predicate.Users(sql.FieldEQ(FieldPasswordResetTokenExpiry, v))
-}
-
-// UUIDEQ applies the EQ predicate on the "uuid" field.
-func UUIDEQ(v uuid.UUID) predicate.Users {
-	return predicate.Users(sql.FieldEQ(FieldUUID, v))
-}
-
-// UUIDNEQ applies the NEQ predicate on the "uuid" field.
-func UUIDNEQ(v uuid.UUID) predicate.Users {
-	return predicate.Users(sql.FieldNEQ(FieldUUID, v))
-}
-
-// UUIDIn applies the In predicate on the "uuid" field.
-func UUIDIn(vs ...uuid.UUID) predicate.Users {
-	return predicate.Users(sql.FieldIn(FieldUUID, vs...))
-}
-
-// UUIDNotIn applies the NotIn predicate on the "uuid" field.
-func UUIDNotIn(vs ...uuid.UUID) predicate.Users {
-	return predicate.Users(sql.FieldNotIn(FieldUUID, vs...))
-}
-
-// UUIDGT applies the GT predicate on the "uuid" field.
-func UUIDGT(v uuid.UUID) predicate.Users {
-	return predicate.Users(sql.FieldGT(FieldUUID, v))
-}
-
-// UUIDGTE applies the GTE predicate on the "uuid" field.
-func UUIDGTE(v uuid.UUID) predicate.Users {
-	return predicate.Users(sql.FieldGTE(FieldUUID, v))
-}
-
-// UUIDLT applies the LT predicate on the "uuid" field.
-func UUIDLT(v uuid.UUID) predicate.Users {
-	return predicate.Users(sql.FieldLT(FieldUUID, v))
-}
-
-// UUIDLTE applies the LTE predicate on the "uuid" field.
-func UUIDLTE(v uuid.UUID) predicate.Users {
-	return predicate.Users(sql.FieldLTE(FieldUUID, v))
 }
 
 // EmailEQ applies the EQ predicate on the "email" field.
@@ -404,6 +359,16 @@ func LastLoginLT(v time.Time) predicate.Users {
 // LastLoginLTE applies the LTE predicate on the "last_login" field.
 func LastLoginLTE(v time.Time) predicate.Users {
 	return predicate.Users(sql.FieldLTE(FieldLastLogin, v))
+}
+
+// LastLoginIsNil applies the IsNil predicate on the "last_login" field.
+func LastLoginIsNil() predicate.Users {
+	return predicate.Users(sql.FieldIsNull(FieldLastLogin))
+}
+
+// LastLoginNotNil applies the NotNil predicate on the "last_login" field.
+func LastLoginNotNil() predicate.Users {
+	return predicate.Users(sql.FieldNotNull(FieldLastLogin))
 }
 
 // IsActiveEQ applies the EQ predicate on the "is_active" field.

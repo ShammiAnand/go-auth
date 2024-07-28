@@ -41,11 +41,12 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	err := utils.ParseJSON(r, &payload)
 	if err != nil {
 		utils.WriteError(w, http.StatusFailedDependency, err)
+		return
 	}
 
 	hashedPassword, err := auth.HashPasswords(payload.Password)
 
-	_, err = h.client.Users.
+	user, err := h.client.Users.
 		Create().
 		SetEmail(payload.Email).
 		SetPasswordHash(hashedPassword).
@@ -53,9 +54,24 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		utils.WriteError(w, http.StatusFailedDependency, err)
+		return
 	}
 
-	return
+	// generate token
+	tokenString, err := auth.CreateJWT(user.ID)
+	if err != nil {
+		utils.WriteError(w, http.StatusFailedDependency, err)
+		return
+	}
+
+	// TODO: save this data to redis
+	// TODO: send email verification to mark is_active field
+
+	utils.WriteJSON(w, http.StatusCreated, types.RegisterUserResponse{
+		ID:    user.ID,
+		Email: user.Email,
+		Token: tokenString,
+	})
 }
 
 func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {

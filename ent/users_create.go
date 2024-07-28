@@ -22,20 +22,6 @@ type UsersCreate struct {
 	hooks    []Hook
 }
 
-// SetUUID sets the "uuid" field.
-func (uc *UsersCreate) SetUUID(u uuid.UUID) *UsersCreate {
-	uc.mutation.SetUUID(u)
-	return uc
-}
-
-// SetNillableUUID sets the "uuid" field if the given value is not nil.
-func (uc *UsersCreate) SetNillableUUID(u *uuid.UUID) *UsersCreate {
-	if u != nil {
-		uc.SetUUID(*u)
-	}
-	return uc
-}
-
 // SetEmail sets the "email" field.
 func (uc *UsersCreate) SetEmail(s string) *UsersCreate {
 	uc.mutation.SetEmail(s)
@@ -79,6 +65,14 @@ func (uc *UsersCreate) SetNillableUpdatedAt(t *time.Time) *UsersCreate {
 // SetLastLogin sets the "last_login" field.
 func (uc *UsersCreate) SetLastLogin(t time.Time) *UsersCreate {
 	uc.mutation.SetLastLogin(t)
+	return uc
+}
+
+// SetNillableLastLogin sets the "last_login" field if the given value is not nil.
+func (uc *UsersCreate) SetNillableLastLogin(t *time.Time) *UsersCreate {
+	if t != nil {
+		uc.SetLastLogin(*t)
+	}
 	return uc
 }
 
@@ -172,6 +166,20 @@ func (uc *UsersCreate) SetMetadata(m map[string]interface{}) *UsersCreate {
 	return uc
 }
 
+// SetID sets the "id" field.
+func (uc *UsersCreate) SetID(u uuid.UUID) *UsersCreate {
+	uc.mutation.SetID(u)
+	return uc
+}
+
+// SetNillableID sets the "id" field if the given value is not nil.
+func (uc *UsersCreate) SetNillableID(u *uuid.UUID) *UsersCreate {
+	if u != nil {
+		uc.SetID(*u)
+	}
+	return uc
+}
+
 // AddRoleIDs adds the "roles" edge to the Roles entity by IDs.
 func (uc *UsersCreate) AddRoleIDs(ids ...int) *UsersCreate {
 	uc.mutation.AddRoleIDs(ids...)
@@ -222,10 +230,6 @@ func (uc *UsersCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (uc *UsersCreate) defaults() {
-	if _, ok := uc.mutation.UUID(); !ok {
-		v := users.DefaultUUID()
-		uc.mutation.SetUUID(v)
-	}
 	if _, ok := uc.mutation.CreatedAt(); !ok {
 		v := users.DefaultCreatedAt()
 		uc.mutation.SetCreatedAt(v)
@@ -242,13 +246,14 @@ func (uc *UsersCreate) defaults() {
 		v := users.DefaultEmailVerified
 		uc.mutation.SetEmailVerified(v)
 	}
+	if _, ok := uc.mutation.ID(); !ok {
+		v := users.DefaultID()
+		uc.mutation.SetID(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (uc *UsersCreate) check() error {
-	if _, ok := uc.mutation.UUID(); !ok {
-		return &ValidationError{Name: "uuid", err: errors.New(`ent: missing required field "Users.uuid"`)}
-	}
 	if _, ok := uc.mutation.Email(); !ok {
 		return &ValidationError{Name: "email", err: errors.New(`ent: missing required field "Users.email"`)}
 	}
@@ -271,9 +276,6 @@ func (uc *UsersCreate) check() error {
 	if _, ok := uc.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Users.updated_at"`)}
 	}
-	if _, ok := uc.mutation.LastLogin(); !ok {
-		return &ValidationError{Name: "last_login", err: errors.New(`ent: missing required field "Users.last_login"`)}
-	}
 	if _, ok := uc.mutation.IsActive(); !ok {
 		return &ValidationError{Name: "is_active", err: errors.New(`ent: missing required field "Users.is_active"`)}
 	}
@@ -294,8 +296,13 @@ func (uc *UsersCreate) sqlSave(ctx context.Context) (*Users, error) {
 		}
 		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	_node.ID = int(id)
+	if _spec.ID.Value != nil {
+		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+			_node.ID = *id
+		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+			return nil, err
+		}
+	}
 	uc.mutation.id = &_node.ID
 	uc.mutation.done = true
 	return _node, nil
@@ -304,11 +311,11 @@ func (uc *UsersCreate) sqlSave(ctx context.Context) (*Users, error) {
 func (uc *UsersCreate) createSpec() (*Users, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Users{config: uc.config}
-		_spec = sqlgraph.NewCreateSpec(users.Table, sqlgraph.NewFieldSpec(users.FieldID, field.TypeInt))
+		_spec = sqlgraph.NewCreateSpec(users.Table, sqlgraph.NewFieldSpec(users.FieldID, field.TypeUUID))
 	)
-	if value, ok := uc.mutation.UUID(); ok {
-		_spec.SetField(users.FieldUUID, field.TypeUUID, value)
-		_node.UUID = value
+	if id, ok := uc.mutation.ID(); ok {
+		_node.ID = id
+		_spec.ID.Value = &id
 	}
 	if value, ok := uc.mutation.Email(); ok {
 		_spec.SetField(users.FieldEmail, field.TypeString, value)
@@ -422,10 +429,6 @@ func (ucb *UsersCreateBulk) Save(ctx context.Context) ([]*Users, error) {
 					return nil, err
 				}
 				mutation.id = &nodes[i].ID
-				if specs[i].ID.Value != nil {
-					id := specs[i].ID.Value.(int64)
-					nodes[i].ID = int(id)
-				}
 				mutation.done = true
 				return nodes[i], nil
 			})

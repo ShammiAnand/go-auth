@@ -18,9 +18,7 @@ import (
 type Users struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
-	// UUID holds the value of the "uuid" field.
-	UUID uuid.UUID `json:"uuid,omitempty"`
+	ID uuid.UUID `json:"id,omitempty"`
 	// Email holds the value of the "email" field.
 	Email string `json:"email,omitempty"`
 	// PasswordHash holds the value of the "password_hash" field.
@@ -78,13 +76,11 @@ func (*Users) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case users.FieldIsActive, users.FieldEmailVerified:
 			values[i] = new(sql.NullBool)
-		case users.FieldID:
-			values[i] = new(sql.NullInt64)
 		case users.FieldEmail, users.FieldPasswordHash, users.FieldVerificationToken, users.FieldPasswordResetToken:
 			values[i] = new(sql.NullString)
 		case users.FieldCreatedAt, users.FieldUpdatedAt, users.FieldLastLogin, users.FieldVerificationTokenExpiry, users.FieldPasswordResetTokenExpiry:
 			values[i] = new(sql.NullTime)
-		case users.FieldUUID:
+		case users.FieldID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -102,16 +98,10 @@ func (u *Users) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case users.FieldID:
-			value, ok := values[i].(*sql.NullInt64)
-			if !ok {
-				return fmt.Errorf("unexpected type %T for field id", value)
-			}
-			u.ID = int(value.Int64)
-		case users.FieldUUID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field uuid", values[i])
+				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				u.UUID = *value
+				u.ID = *value
 			}
 		case users.FieldEmail:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -232,9 +222,6 @@ func (u *Users) String() string {
 	var builder strings.Builder
 	builder.WriteString("Users(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", u.ID))
-	builder.WriteString("uuid=")
-	builder.WriteString(fmt.Sprintf("%v", u.UUID))
-	builder.WriteString(", ")
 	builder.WriteString("email=")
 	builder.WriteString(u.Email)
 	builder.WriteString(", ")

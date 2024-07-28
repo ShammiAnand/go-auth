@@ -36,13 +36,12 @@ var (
 	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "uuid", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeUUID},
 		{Name: "email", Type: field.TypeString, Unique: true},
 		{Name: "password_hash", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "last_login", Type: field.TypeTime},
+		{Name: "last_login", Type: field.TypeTime, Nullable: true},
 		{Name: "is_active", Type: field.TypeBool, Default: false},
 		{Name: "email_verified", Type: field.TypeBool, Default: false},
 		{Name: "verification_token", Type: field.TypeString, Nullable: true},
@@ -84,7 +83,7 @@ var (
 	}
 	// UsersRolesColumns holds the columns for the "users_roles" table.
 	UsersRolesColumns = []*schema.Column{
-		{Name: "users_id", Type: field.TypeInt},
+		{Name: "users_id", Type: field.TypeUUID},
 		{Name: "roles_id", Type: field.TypeInt},
 	}
 	// UsersRolesTable holds the schema information for the "users_roles" table.

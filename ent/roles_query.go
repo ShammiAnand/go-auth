@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/shammianand/go-auth/ent/permissions"
 	"github.com/shammianand/go-auth/ent/predicate"
 	"github.com/shammianand/go-auth/ent/roles"
@@ -449,7 +450,7 @@ func (rq *RolesQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Roles,
 func (rq *RolesQuery) loadUsers(ctx context.Context, query *UsersQuery, nodes []*Roles, init func(*Roles), assign func(*Roles, *Users)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
 	byID := make(map[int]*Roles)
-	nids := make(map[int]map[*Roles]struct{})
+	nids := make(map[uuid.UUID]map[*Roles]struct{})
 	for i, node := range nodes {
 		edgeIDs[i] = node.ID
 		byID[node.ID] = node
@@ -482,7 +483,7 @@ func (rq *RolesQuery) loadUsers(ctx context.Context, query *UsersQuery, nodes []
 			}
 			spec.Assign = func(columns []string, values []any) error {
 				outValue := int(values[0].(*sql.NullInt64).Int64)
-				inValue := int(values[1].(*sql.NullInt64).Int64)
+				inValue := *values[1].(*uuid.UUID)
 				if nids[inValue] == nil {
 					nids[inValue] = map[*Roles]struct{}{byID[outValue]: {}}
 					return assign(columns[1:], values[1:])

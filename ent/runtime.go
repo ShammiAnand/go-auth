@@ -30,10 +30,6 @@ func init() {
 	roles.DefaultCreatedAt = rolesDescCreatedAt.Default.(func() time.Time)
 	usersFields := schema.Users{}.Fields()
 	_ = usersFields
-	// usersDescUUID is the schema descriptor for uuid field.
-	usersDescUUID := usersFields[0].Descriptor()
-	// users.DefaultUUID holds the default value on creation for the uuid field.
-	users.DefaultUUID = usersDescUUID.Default.(func() uuid.UUID)
 	// usersDescEmail is the schema descriptor for email field.
 	usersDescEmail := usersFields[1].Descriptor()
 	// users.EmailValidator is a validator for the "email" field. It is called by the builders before save.
@@ -58,4 +54,8 @@ func init() {
 	usersDescEmailVerified := usersFields[7].Descriptor()
 	// users.DefaultEmailVerified holds the default value on creation for the email_verified field.
 	users.DefaultEmailVerified = usersDescEmailVerified.Default.(bool)
+	// usersDescID is the schema descriptor for id field.
+	usersDescID := usersFields[0].Descriptor()
+	// users.DefaultID holds the default value on creation for the id field.
+	users.DefaultID = usersDescID.Default.(func() uuid.UUID)
 }

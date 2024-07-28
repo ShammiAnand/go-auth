@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/shammianand/go-auth/ent/permissions"
 	"github.com/shammianand/go-auth/ent/roles"
 	"github.com/shammianand/go-auth/ent/users"
@@ -63,14 +64,14 @@ func (rc *RolesCreate) SetID(i int) *RolesCreate {
 }
 
 // AddUserIDs adds the "users" edge to the Users entity by IDs.
-func (rc *RolesCreate) AddUserIDs(ids ...int) *RolesCreate {
+func (rc *RolesCreate) AddUserIDs(ids ...uuid.UUID) *RolesCreate {
 	rc.mutation.AddUserIDs(ids...)
 	return rc
 }
 
 // AddUsers adds the "users" edges to the Users entity.
 func (rc *RolesCreate) AddUsers(u ...*Users) *RolesCreate {
-	ids := make([]int, len(u))
+	ids := make([]uuid.UUID, len(u))
 	for i := range u {
 		ids[i] = u[i].ID
 	}
@@ -193,7 +194,7 @@ func (rc *RolesCreate) createSpec() (*Roles, *sqlgraph.CreateSpec) {
 			Columns: roles.UsersPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/shammianand/go-auth/ent/predicate"
 	"github.com/shammianand/go-auth/ent/roles"
 	"github.com/shammianand/go-auth/ent/users"
@@ -106,8 +107,8 @@ func (uq *UsersQuery) FirstX(ctx context.Context) *Users {
 
 // FirstID returns the first Users ID from the query.
 // Returns a *NotFoundError when no Users ID was found.
-func (uq *UsersQuery) FirstID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (uq *UsersQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = uq.Limit(1).IDs(setContextOp(ctx, uq.ctx, "FirstID")); err != nil {
 		return
 	}
@@ -119,7 +120,7 @@ func (uq *UsersQuery) FirstID(ctx context.Context) (id int, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (uq *UsersQuery) FirstIDX(ctx context.Context) int {
+func (uq *UsersQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	id, err := uq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -157,8 +158,8 @@ func (uq *UsersQuery) OnlyX(ctx context.Context) *Users {
 // OnlyID is like Only, but returns the only Users ID in the query.
 // Returns a *NotSingularError when more than one Users ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (uq *UsersQuery) OnlyID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (uq *UsersQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = uq.Limit(2).IDs(setContextOp(ctx, uq.ctx, "OnlyID")); err != nil {
 		return
 	}
@@ -174,7 +175,7 @@ func (uq *UsersQuery) OnlyID(ctx context.Context) (id int, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (uq *UsersQuery) OnlyIDX(ctx context.Context) int {
+func (uq *UsersQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	id, err := uq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -202,7 +203,7 @@ func (uq *UsersQuery) AllX(ctx context.Context) []*Users {
 }
 
 // IDs executes the query and returns a list of Users IDs.
-func (uq *UsersQuery) IDs(ctx context.Context) (ids []int, err error) {
+func (uq *UsersQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 	if uq.ctx.Unique == nil && uq.path != nil {
 		uq.Unique(true)
 	}
@@ -214,7 +215,7 @@ func (uq *UsersQuery) IDs(ctx context.Context) (ids []int, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (uq *UsersQuery) IDsX(ctx context.Context) []int {
+func (uq *UsersQuery) IDsX(ctx context.Context) []uuid.UUID {
 	ids, err := uq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -298,12 +299,12 @@ func (uq *UsersQuery) WithRoles(opts ...func(*RolesQuery)) *UsersQuery {
 // Example:
 //
 //	var v []struct {
-//		UUID uuid.UUID `json:"uuid,omitempty"`
+//		Email string `json:"email,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Users.Query().
-//		GroupBy(users.FieldUUID).
+//		GroupBy(users.FieldEmail).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (uq *UsersQuery) GroupBy(field string, fields ...string) *UsersGroupBy {
@@ -321,11 +322,11 @@ func (uq *UsersQuery) GroupBy(field string, fields ...string) *UsersGroupBy {
 // Example:
 //
 //	var v []struct {
-//		UUID uuid.UUID `json:"uuid,omitempty"`
+//		Email string `json:"email,omitempty"`
 //	}
 //
 //	client.Users.Query().
-//		Select(users.FieldUUID).
+//		Select(users.FieldEmail).
 //		Scan(ctx, &v)
 func (uq *UsersQuery) Select(fields ...string) *UsersSelect {
 	uq.ctx.Fields = append(uq.ctx.Fields, fields...)
@@ -404,7 +405,7 @@ func (uq *UsersQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Users,
 
 func (uq *UsersQuery) loadRoles(ctx context.Context, query *RolesQuery, nodes []*Users, init func(*Users), assign func(*Users, *Roles)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[int]*Users)
+	byID := make(map[uuid.UUID]*Users)
 	nids := make(map[int]map[*Users]struct{})
 	for i, node := range nodes {
 		edgeIDs[i] = node.ID
@@ -434,10 +435,10 @@ func (uq *UsersQuery) loadRoles(ctx context.Context, query *RolesQuery, nodes []
 				if err != nil {
 					return nil, err
 				}
-				return append([]any{new(sql.NullInt64)}, values...), nil
+				return append([]any{new(uuid.UUID)}, values...), nil
 			}
 			spec.Assign = func(columns []string, values []any) error {
-				outValue := int(values[0].(*sql.NullInt64).Int64)
+				outValue := *values[0].(*uuid.UUID)
 				inValue := int(values[1].(*sql.NullInt64).Int64)
 				if nids[inValue] == nil {
 					nids[inValue] = map[*Users]struct{}{byID[outValue]: {}}
@@ -474,7 +475,7 @@ func (uq *UsersQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (uq *UsersQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(users.Table, users.Columns, sqlgraph.NewFieldSpec(users.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewQuerySpec(users.Table, users.Columns, sqlgraph.NewFieldSpec(users.FieldID, field.TypeUUID))
 	_spec.From = uq.sql
 	if unique := uq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

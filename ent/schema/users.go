@@ -18,7 +18,7 @@ type Users struct {
 // Fields of the Users.
 func (Users) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("uuid", uuid.UUID{}).
+		field.UUID("id", uuid.UUID{}).
 			Default(uuid.New),
 		field.String("email").NotEmpty().Unique(),
 		field.String("password_hash").NotEmpty(),
@@ -26,7 +26,7 @@ func (Users) Fields() []ent.Field {
 			Default(time.Now),
 		field.Time("updated_at").
 			Default(time.Now),
-		field.Time("last_login"),
+		field.Time("last_login").Optional(),
 		field.Bool("is_active").
 			Default(false),
 		field.Bool("email_verified").

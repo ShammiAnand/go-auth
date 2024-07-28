@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/shammianand/go-auth/ent/permissions"
 	"github.com/shammianand/go-auth/ent/predicate"
 	"github.com/shammianand/go-auth/ent/roles"
@@ -64,14 +65,14 @@ func (ru *RolesUpdate) ClearDescription() *RolesUpdate {
 }
 
 // AddUserIDs adds the "users" edge to the Users entity by IDs.
-func (ru *RolesUpdate) AddUserIDs(ids ...int) *RolesUpdate {
+func (ru *RolesUpdate) AddUserIDs(ids ...uuid.UUID) *RolesUpdate {
 	ru.mutation.AddUserIDs(ids...)
 	return ru
 }
 
 // AddUsers adds the "users" edges to the Users entity.
 func (ru *RolesUpdate) AddUsers(u ...*Users) *RolesUpdate {
-	ids := make([]int, len(u))
+	ids := make([]uuid.UUID, len(u))
 	for i := range u {
 		ids[i] = u[i].ID
 	}
@@ -105,14 +106,14 @@ func (ru *RolesUpdate) ClearUsers() *RolesUpdate {
 }
 
 // RemoveUserIDs removes the "users" edge to Users entities by IDs.
-func (ru *RolesUpdate) RemoveUserIDs(ids ...int) *RolesUpdate {
+func (ru *RolesUpdate) RemoveUserIDs(ids ...uuid.UUID) *RolesUpdate {
 	ru.mutation.RemoveUserIDs(ids...)
 	return ru
 }
 
 // RemoveUsers removes "users" edges to Users entities.
 func (ru *RolesUpdate) RemoveUsers(u ...*Users) *RolesUpdate {
-	ids := make([]int, len(u))
+	ids := make([]uuid.UUID, len(u))
 	for i := range u {
 		ids[i] = u[i].ID
 	}
@@ -193,7 +194,7 @@ func (ru *RolesUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: roles.UsersPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -206,7 +207,7 @@ func (ru *RolesUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: roles.UsersPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -222,7 +223,7 @@ func (ru *RolesUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: roles.UsersPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -330,14 +331,14 @@ func (ruo *RolesUpdateOne) ClearDescription() *RolesUpdateOne {
 }
 
 // AddUserIDs adds the "users" edge to the Users entity by IDs.
-func (ruo *RolesUpdateOne) AddUserIDs(ids ...int) *RolesUpdateOne {
+func (ruo *RolesUpdateOne) AddUserIDs(ids ...uuid.UUID) *RolesUpdateOne {
 	ruo.mutation.AddUserIDs(ids...)
 	return ruo
 }
 
 // AddUsers adds the "users" edges to the Users entity.
 func (ruo *RolesUpdateOne) AddUsers(u ...*Users) *RolesUpdateOne {
-	ids := make([]int, len(u))
+	ids := make([]uuid.UUID, len(u))
 	for i := range u {
 		ids[i] = u[i].ID
 	}
@@ -371,14 +372,14 @@ func (ruo *RolesUpdateOne) ClearUsers() *RolesUpdateOne {
 }
 
 // RemoveUserIDs removes the "users" edge to Users entities by IDs.
-func (ruo *RolesUpdateOne) RemoveUserIDs(ids ...int) *RolesUpdateOne {
+func (ruo *RolesUpdateOne) RemoveUserIDs(ids ...uuid.UUID) *RolesUpdateOne {
 	ruo.mutation.RemoveUserIDs(ids...)
 	return ruo
 }
 
 // RemoveUsers removes "users" edges to Users entities.
 func (ruo *RolesUpdateOne) RemoveUsers(u ...*Users) *RolesUpdateOne {
-	ids := make([]int, len(u))
+	ids := make([]uuid.UUID, len(u))
 	for i := range u {
 		ids[i] = u[i].ID
 	}
@@ -489,7 +490,7 @@ func (ruo *RolesUpdateOne) sqlSave(ctx context.Context) (_node *Roles, err error
 			Columns: roles.UsersPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -502,7 +503,7 @@ func (ruo *RolesUpdateOne) sqlSave(ctx context.Context) (_node *Roles, err error
 			Columns: roles.UsersPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -518,7 +519,7 @@ func (ruo *RolesUpdateOne) sqlSave(ctx context.Context) (_node *Roles, err error
 			Columns: roles.UsersPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

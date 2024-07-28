@@ -15,8 +15,6 @@ const (
 	Label = "users"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldUUID holds the string denoting the uuid field in the database.
-	FieldUUID = "uuid"
 	// FieldEmail holds the string denoting the email field in the database.
 	FieldEmail = "email"
 	// FieldPasswordHash holds the string denoting the password_hash field in the database.
@@ -55,7 +53,6 @@ const (
 // Columns holds all SQL columns for users fields.
 var Columns = []string{
 	FieldID,
-	FieldUUID,
 	FieldEmail,
 	FieldPasswordHash,
 	FieldCreatedAt,
@@ -87,8 +84,6 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// DefaultUUID holds the default value on creation for the "uuid" field.
-	DefaultUUID func() uuid.UUID
 	// EmailValidator is a validator for the "email" field. It is called by the builders before save.
 	EmailValidator func(string) error
 	// PasswordHashValidator is a validator for the "password_hash" field. It is called by the builders before save.
@@ -101,6 +96,8 @@ var (
 	DefaultIsActive bool
 	// DefaultEmailVerified holds the default value on creation for the "email_verified" field.
 	DefaultEmailVerified bool
+	// DefaultID holds the default value on creation for the "id" field.
+	DefaultID func() uuid.UUID
 )
 
 // OrderOption defines the ordering options for the Users queries.
@@ -109,11 +106,6 @@ type OrderOption func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
-}
-
-// ByUUID orders the results by the uuid field.
-func ByUUID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldUUID, opts...).ToFunc()
 }
 
 // ByEmail orders the results by the email field.

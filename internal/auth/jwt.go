@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/redis/go-redis/v9"
 	"github.com/shammianand/go-auth/internal/config"
@@ -74,7 +75,7 @@ func InitializeKeys() error {
 	return nil
 }
 
-func CreateJWT(userID int) (string, error) {
+func CreateJWT(userID uuid.UUID) (string, error) {
 	keyMutex.RLock()
 	defer keyMutex.RUnlock()
 	// expiration := time.Second * time.Duration(config.TokenExpiry)
