@@ -78,12 +78,14 @@ func InitializeKeys() error {
 func CreateJWT(userID uuid.UUID) (string, error) {
 	keyMutex.RLock()
 	defer keyMutex.RUnlock()
-	// expiration := time.Second * time.Duration(config.TokenExpiry)
+	expiration := time.Second * time.Duration(config.TokenExpiry)
 
-	// TODO: follow RFC 7519
+	// RFC 7519
 	claims := jwt.MapClaims{
-		// "userID":    strconv.Itoa(userID),
-		// "expiredAt": time.Now().Add(expiration).Unix(),
+		"iss": "github.com/shammianand/go-auht",
+		"sub": userID.String(), // NOTE: subject is the user id
+		"exp": time.Now().Add(expiration).Unix(),
+		"iat": time.Now().Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
