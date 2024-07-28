@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/rsa"
 	"encoding/json"
 	"fmt"
@@ -25,25 +26,50 @@ var (
 	keyMutex   sync.RWMutex
 )
 
-func InitializeKeys() error {
-	var err error
-	privateKey, err = jwt.ParseRSAPrivateKeyFromPEM([]byte("SOME PRIVATE KEY SHOULD COME FROM ENV"))
-	if err != nil {
-		return fmt.Errorf("failed to parse private key: %v", err)
-	}
-	publicKey = &privateKey.PublicKey
+type Key struct {
+	PrivateKey *rsa.PrivateKey
+	PublicKey  *rsa.PublicKey
+	Kid        string
+	CreatedAt  time.Time
+}
 
-	key, err := jwk.New(publicKey)
+func generateKey() (*Key, error) {
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate RSA key: %v", err)
+	}
+
+	// TODO: add a log for this
+	kid := fmt.Sprintf("key-%d", time.Now().Unix())
+
+	return &Key{
+		PrivateKey: privateKey,
+		PublicKey:  &privateKey.PublicKey,
+		Kid:        kid,
+		CreatedAt:  time.Now(),
+	}, nil
+}
+
+func InitializeKeys() error {
+	key, err := generateKey()
+	if err != nil {
+		return fmt.Errorf("failed to generate key: %v", err)
+	}
+
+	privateKey = key.PrivateKey
+	publicKey = key.PublicKey
+
+	jwkKey, err := jwk.New(publicKey)
 	if err != nil {
 		return fmt.Errorf("failed to create JWK: %v", err)
 	}
 
-	if err := key.Set(jwk.KeyIDKey, "my-key-id"); err != nil {
+	if err := jwkKey.Set(jwk.KeyIDKey, key.Kid); err != nil {
 		return fmt.Errorf("failed to set key ID: %v", err)
 	}
 
 	keySet = jwk.NewSet()
-	keySet.Add(key)
+	keySet.Add(jwkKey)
 
 	return nil
 }
