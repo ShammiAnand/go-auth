@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 
@@ -21,10 +20,9 @@ import (
 )
 
 var (
-	privateKey *rsa.PrivateKey
-	publicKey  *rsa.PublicKey
-	keySet     jwk.Set
-	keyMutex   sync.RWMutex
+	keys     map[string]*Key
+	keySet   jwk.Set
+	keyMutex sync.RWMutex
 )
 
 type Key struct {
@@ -40,7 +38,6 @@ func generateKey() (*Key, error) {
 		return nil, fmt.Errorf("failed to generate RSA key: %v", err)
 	}
 
-	// TODO: add a log for this
 	kid := fmt.Sprintf("key-%d", time.Now().Unix())
 
 	return &Key{
@@ -52,15 +49,20 @@ func generateKey() (*Key, error) {
 }
 
 func InitializeKeys() error {
+	keyMutex.Lock()
+	defer keyMutex.Unlock()
+
+	keys = make(map[string]*Key)
+	keySet = jwk.NewSet()
+
 	key, err := generateKey()
 	if err != nil {
 		return fmt.Errorf("failed to generate key: %v", err)
 	}
 
-	privateKey = key.PrivateKey
-	publicKey = key.PublicKey
+	keys[key.Kid] = key
 
-	jwkKey, err := jwk.New(publicKey)
+	jwkKey, err := jwk.New(key.PublicKey)
 	if err != nil {
 		return fmt.Errorf("failed to create JWK: %v", err)
 	}
@@ -69,36 +71,96 @@ func InitializeKeys() error {
 		return fmt.Errorf("failed to set key ID: %v", err)
 	}
 
-	keySet = jwk.NewSet()
 	keySet.Add(jwkKey)
 
 	return nil
 }
 
-func CreateJWT(userID uuid.UUID) (string, error) {
+func CreateJWT(userID uuid.UUID, cache *redis.Client) (string, error) {
 	keyMutex.RLock()
 	defer keyMutex.RUnlock()
+
+	if len(keys) == 0 {
+		return "", fmt.Errorf("no keys available")
+	}
+
+	// Use the first key in the map (we only have one for now)
+	var key *Key
+	for _, k := range keys {
+		key = k
+		break
+	}
+
 	expiration := time.Second * time.Duration(config.TokenExpiry)
 
-	// RFC 7519
 	claims := jwt.MapClaims{
-		"iss": "github.com/shammianand/go-auht",
-		"sub": userID.String(), // NOTE: subject is the user id
+		"iss": "github.com/shammianand/go-auth",
+		"sub": userID.String(),
 		"exp": time.Now().Add(expiration).Unix(),
 		"iat": time.Now().Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	token.Header["kid"] = config.ENV_SECRET_KEY_ID
+	token.Header["kid"] = key.Kid
 
-	tokenString, err := token.SignedString(privateKey)
+	tokenString, err := token.SignedString(key.PrivateKey)
 	if err != nil {
 		return "", fmt.Errorf("failed to sign token: %v", err)
+	}
+
+	// Store token in Redis
+	err = cache.Set(context.Background(), fmt.Sprintf("token:%s", userID.String()), tokenString, expiration).Err()
+	if err != nil {
+		return "", fmt.Errorf("failed to store token in Redis: %v", err)
 	}
 
 	return tokenString, nil
 }
 
+func RefreshToken(cache *redis.Client) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		oldTokenString := getTokenFromRequest(r)
+		oldToken, err := validateToken(oldTokenString)
+		if err != nil {
+			utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("invalid token"))
+			return
+		}
+
+		claims, ok := oldToken.Claims.(jwt.MapClaims)
+		if !ok {
+			utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("invalid token claims"))
+			return
+		}
+
+		userID, ok := claims["sub"].(string)
+		if !ok {
+			utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("user ID not found in token"))
+			return
+		}
+
+		// Check if old token exists in Redis
+		storedToken, err := cache.Get(context.Background(), fmt.Sprintf("token:%s", userID)).Result()
+		if err != nil || storedToken != oldTokenString {
+			utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("token not found or invalid"))
+			return
+		}
+
+		// Create new token
+		userUUID, _ := uuid.Parse(userID)
+		newTokenString, err := CreateJWT(userUUID, cache)
+		if err != nil {
+			utils.WriteError(w, http.StatusInternalServerError, fmt.Errorf("failed to create new token"))
+			return
+		}
+
+		// Remove old token from Redis
+		cache.Del(context.Background(), fmt.Sprintf("token:%s", userID))
+
+		utils.WriteJSON(w, http.StatusOK, map[string]string{"token": newTokenString})
+	}
+}
+
+// FIXME: add a storage deb to look up the user id
 func WithJWTAuth(handlerFunc http.HandlerFunc, cache *redis.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tokenString := getTokenFromRequest(r)
@@ -116,22 +178,20 @@ func WithJWTAuth(handlerFunc http.HandlerFunc, cache *redis.Client) http.Handler
 			return
 		}
 
-		userID, _ := strconv.Atoi(claims["userID"].(string))
-		expirationTime := int64(claims["expiredAt"].(float64))
-
-		if time.Now().Unix() > expirationTime {
-			log.Println("TOKEN EXPIRED")
+		userID, ok := claims["sub"].(string)
+		if !ok {
+			log.Printf("user ID not found in token")
 			permissionDenied(w)
 			return
 		}
 
-		// FIXME: this is hacky for now
-		// user, err := store.GetUserByID(userID)
-		// if err != nil {
-		// 	log.Printf("failed to get user: %v", err)
-		// 	permissionDenied(w)
-		// 	return
-		// }
+		// Check if token exists in Redis
+		storedToken, err := cache.Get(context.Background(), fmt.Sprintf("token:%s", userID)).Result()
+		if err != nil || storedToken != tokenString {
+			log.Printf("token not found in Redis or mismatch")
+			permissionDenied(w)
+			return
+		}
 
 		ctx := context.WithValue(r.Context(), "userID", userID)
 		handlerFunc(w, r.WithContext(ctx))
@@ -139,7 +199,11 @@ func WithJWTAuth(handlerFunc http.HandlerFunc, cache *redis.Client) http.Handler
 }
 
 func getTokenFromRequest(r *http.Request) string {
-	return r.Header.Get("Authorization")
+	bearerToken := r.Header.Get("Authorization")
+	if len(bearerToken) > 7 && bearerToken[:7] == "Bearer " {
+		return bearerToken[7:]
+	}
+	return ""
 }
 
 func validateToken(tokenString string) (*jwt.Token, error) {
@@ -154,15 +218,11 @@ func validateToken(tokenString string) (*jwt.Token, error) {
 		if !ok {
 			return nil, fmt.Errorf("kid header not found")
 		}
-		key, found := keySet.LookupKeyID(kid)
+		key, found := keys[kid]
 		if !found {
 			return nil, fmt.Errorf("key %v not found", kid)
 		}
-		var publicKey interface{}
-		if err := key.Raw(&publicKey); err != nil {
-			return nil, fmt.Errorf("failed to get raw public key: %v", err)
-		}
-		return publicKey, nil
+		return key.PublicKey, nil
 	})
 
 	if err != nil {
@@ -176,10 +236,10 @@ func permissionDenied(w http.ResponseWriter) {
 	utils.WriteError(w, http.StatusForbidden, fmt.Errorf("permission denied"))
 }
 
-func GetUserIdFromContext(ctx context.Context) int {
-	userID, ok := ctx.Value("userID").(int)
+func GetUserIdFromContext(ctx context.Context) string {
+	userID, ok := ctx.Value("userID").(string)
 	if !ok {
-		return -1
+		return ""
 	}
 	return userID
 }

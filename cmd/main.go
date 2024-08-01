@@ -8,6 +8,7 @@ import (
 )
 
 func main() {
+
 	entClient, err := storage.DBConnect()
 	if err != nil {
 		log.Fatal(err)

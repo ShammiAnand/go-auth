@@ -9,6 +9,7 @@ import (
 
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"github.com/shammianand/go-auth/ent"
 	"github.com/shammianand/go-auth/ent/users"
@@ -46,6 +47,35 @@ func (h *Handler) RegisterRoutes(router *http.ServeMux) {
 	router.HandleFunc("POST /auth/signup", h.handleRegister)
 
 	// Authenticated Routes
+	router.HandleFunc("GET /auth/refresh", auth.RefreshToken(h.cache))
+	router.HandleFunc("GET /auth/me", auth.WithJWTAuth(h.handleGetMe, h.cache))
+}
+
+// requires an auth token
+func (h *Handler) handleGetMe(w http.ResponseWriter, r *http.Request) {
+	userId := auth.GetUserIdFromContext(r.Context())
+	// get the info regarding this user from db
+
+	uuidUserId, err := uuid.Parse(userId)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, err)
+		return
+	}
+
+	user, err := h.client.Users.Query().Where(
+		users.IDEQ(uuidUserId),
+	).Only(h.ctx)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, err)
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"id":         user.ID,
+		"email":      user.Email,
+		"created_at": user.CreatedAt.Local(),
+		"updated_at": user.UpdatedAt.Local(),
+		"last_login": user.LastLogin.Local(),
+	})
 }
 
 // creates a new user entry in postgres,
@@ -106,7 +136,7 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// generate token
-	tokenString, err := auth.CreateJWT(user.ID)
+	tokenString, err := auth.CreateJWT(user.ID, h.cache)
 	if err != nil {
 		utils.WriteError(w, http.StatusFailedDependency, err)
 		return
@@ -114,7 +144,7 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	err = h.cache.Set(h.ctx, fmt.Sprintf("access_token:%v", user.ID.String()), tokenString, 24*60*time.Minute).Err()
 	if err != nil {
-
+		h.logger.Info("unable to store to redis", "error", err)
 	}
 
 	utils.WriteJSON(w, http.StatusOK, types.LoginUserResponse{
