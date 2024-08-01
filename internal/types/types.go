@@ -10,7 +10,6 @@ type RegisterUserRequest struct {
 type RegisterUserResponse struct {
 	Email string    `json:"email"`
 	ID    uuid.UUID `json:"id"`
-	Token string    `json:"token"`
 }
 
 type LoginUserRequest struct {

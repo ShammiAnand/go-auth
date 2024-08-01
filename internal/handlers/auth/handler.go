@@ -2,7 +2,9 @@ package auth
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
+	"os"
 	"time"
 
 	"context"
@@ -18,8 +20,10 @@ import (
 type Handler struct {
 	client *ent.Client
 	cache  *redis.Client // NOTE: i am not sure if this belong here?
-	// NOTE: also requires an email client
-	ctx context.Context
+	ctx    context.Context
+	logger *slog.Logger
+
+	// TODO: add an email client
 }
 
 // It creates a new Auth Handler with a Background context
@@ -28,6 +32,9 @@ func NewHandler(client *ent.Client, cache *redis.Client) *Handler {
 		client: client,
 		cache:  cache,
 		ctx:    context.Background(),
+		logger: slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level: slog.LevelDebug,
+		})),
 	}
 }
 
@@ -42,7 +49,9 @@ func (h *Handler) RegisterRoutes(router *http.ServeMux) {
 }
 
 // creates a new user entry in postgres,
-// send a verification email and returns an acccess token
+// sends a verification email
+// upon verification user can login to get the token?
+// for now allowing to login without email verification
 func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	var payload types.RegisterUserRequest
 
@@ -65,21 +74,11 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// generate token
-	tokenString, err := auth.CreateJWT(user.ID)
-	if err != nil {
-		utils.WriteError(w, http.StatusFailedDependency, err)
-		return
-	}
-
 	// TODO: send email verification to mark is_active field
-
-	h.cache.Set(h.ctx, fmt.Sprintf("access_token:%v", user.ID.String()), tokenString, 24*60*time.Minute)
 
 	utils.WriteJSON(w, http.StatusCreated, types.RegisterUserResponse{
 		ID:    user.ID,
 		Email: user.Email,
-		Token: tokenString,
 	})
 }
 
@@ -113,7 +112,10 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.cache.Set(h.ctx, fmt.Sprintf("access_token:%v", user.ID.String()), tokenString, 24*60*time.Minute)
+	err = h.cache.Set(h.ctx, fmt.Sprintf("access_token:%v", user.ID.String()), tokenString, 24*60*time.Minute).Err()
+	if err != nil {
+
+	}
 
 	utils.WriteJSON(w, http.StatusOK, types.LoginUserResponse{
 		Token:    tokenString,

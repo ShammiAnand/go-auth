@@ -15,6 +15,7 @@ func main() {
 
 	redisDB := storage.GetRedisClient()
 
+	// TODO: move the addr to env
 	authServer := api.NewAPIServer(":42069", entClient, redisDB)
 	if err := authServer.Run(); err != nil {
 		log.Fatal(err)

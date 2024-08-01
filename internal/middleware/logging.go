@@ -1,12 +1,18 @@
 package middleware
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/shammianand/go-auth/internal/utils"
 )
+
+var log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+	Level: slog.LevelDebug,
+}))
 
 func Logging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -16,6 +22,12 @@ func Logging(next http.Handler) http.Handler {
 			StatusCode:     http.StatusOK,
 		}
 		next.ServeHTTP(wrapped, r)
-		log.Println(wrapped.StatusCode, r.Method, r.URL.Path, time.Since(start))
+		log.Info(
+			"API Logger",
+			strconv.Itoa(wrapped.StatusCode),
+			r.Method,
+			r.URL.Path,
+			time.Since(start).Seconds(),
+		)
 	})
 }
