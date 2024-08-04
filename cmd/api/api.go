@@ -1,7 +1,6 @@
 package api
 
 import (
-	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -52,7 +51,8 @@ func (s *APIServer) Run() error {
 	// maybe have a job that calls this every 24 hours
 	err = a.InitializeKeys(s.cache)
 	if err != nil {
-		log.Fatal(err)
+		s.logger.Error("failed to InitializeKeys", "error", err)
+		return err
 	}
 
 	authService := auth.NewHandler(s.client, s.cache)

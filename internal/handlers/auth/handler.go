@@ -20,7 +20,7 @@ import (
 
 type Handler struct {
 	client *ent.Client
-	cache  *redis.Client // NOTE: i am not sure if this belong here?
+	cache  *redis.Client
 	ctx    context.Context
 	logger *slog.Logger
 

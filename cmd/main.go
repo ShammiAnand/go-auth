@@ -1,17 +1,16 @@
 package main
 
 import (
-	"log"
-
 	"github.com/shammianand/go-auth/cmd/api"
 	"github.com/shammianand/go-auth/internal/storage"
+	"github.com/shammianand/go-auth/internal/utils"
 )
 
 func main() {
 
 	entClient, err := storage.DBConnect()
 	if err != nil {
-		log.Fatal(err)
+		utils.Logger.Error("failed to connect to db", "error", err)
 	}
 
 	redisDB := storage.GetRedisClient()
@@ -19,6 +18,7 @@ func main() {
 	// TODO: move the addr to env
 	authServer := api.NewAPIServer(":42069", entClient, redisDB)
 	if err := authServer.Run(); err != nil {
-		log.Fatal(err)
+		utils.Logger.Error("failed to start the auth server", "error", err)
+		return
 	}
 }
