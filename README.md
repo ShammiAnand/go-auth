@@ -1,6 +1,9 @@
 # `go-auth`
 
-[![GoDoc][doc-img]][doc] [![GoReport][report-img]][report]
+![Go Version](https://img.shields.io/badge/Go-1.22-blue.svg)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+
 
 1. [Architecture Overview](#architecture-overview)
 2. [API Endpoints](#api-endpoints)
