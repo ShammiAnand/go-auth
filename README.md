@@ -1,5 +1,7 @@
 # `go-auth`
 
+[![GoDoc][doc-img]][doc] [![GoReport][report-img]][report]
+
 1. [Architecture Overview](#architecture-overview)
 2. [API Endpoints](#api-endpoints)
 3. [JWT and JWKS Implementation](#jwt-and-jwks-implementation)
