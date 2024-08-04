@@ -13,27 +13,27 @@ The authentication service is designed as a RESTful API using Go. It implements 
 
 ## API Endpoints
 
-### 1. `/auth/signup` (POST)
+### 1. `POST /auth/signup`
 
-### 2. `/auth/login` (POST)
+### 2. `POST /auth/login`
 
-### 3. `/auth/logout` (POST)
+### 3. `POST /auth/logout`
 
-### 4. `/auth/token/refresh` (POST)
+### 4. `GET /auth/token/refresh`
 
-### 5. `/auth/password/reset-request` (POST)
+### 5. `POST /auth/password/reset-request`
 
-### 6. `/auth/password/reset` (POST)
+### 6. `POST /auth/password/reset`
 
-### 7. `/auth/verify-email` (GET)
+### 7. `GET /auth/verify-email`
 
-### 8. `/auth/resend-verification` (POST)
+### 8. `POST /auth/resend-verification`
 
-### 9. `/auth/me` (GET)
+### 9. `GET /auth/me`
 
-### 10. `/auth/update-profile` (PUT)
+### 10. `PUT /auth/update-profile`
 
-### 11. `/auth/.well-known/jwks.json` (GET)
+### 11. `GET /auth/.well-known/jwks.json`
 
 ---
 
