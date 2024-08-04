@@ -1,6 +1,4 @@
-# `go-auth` by Shammi Anand
-
-## Table of Contents
+# `go-auth`
 
 1. [Architecture Overview](#architecture-overview)
 2. [API Endpoints](#api-endpoints)
@@ -17,101 +15,27 @@ The authentication service is designed as a RESTful API using Go. It implements 
 
 ### 1. `/auth/signup` (POST)
 
-- **Purpose**: Register a new user
-- **Input**: Email, password, optional user details
-- **Process**:
-  - Validate input
-  - Check for existing users
-  - Hash password using bcrypt
-  - Generate and store email verification token
-  - Trigger verification email
-- **Response**: User ID and message (do not auto-login)
-
 ### 2. `/auth/login` (POST)
-
-- **Purpose**: Authenticate a user
-- **Input**: Email, password
-- **Process**:
-  - Validate credentials
-  - Check if email is verified
-  - Generate access and refresh tokens
-- **Response**: Access token, refresh token, user info
 
 ### 3. `/auth/logout` (POST)
 
-- **Purpose**: Log out a user
-- **Input**: Refresh token
-- **Process**:
-  - Invalidate refresh token
-  - Optionally blacklist access token
-- **Response**: Success message
-
 ### 4. `/auth/token/refresh` (POST)
-
-- **Purpose**: Obtain a new access token
-- **Input**: Refresh token
-- **Process**:
-  - Validate refresh token
-  - Generate new access token
-  - Optionally rotate refresh token
-- **Response**: New access token, optionally new refresh token
 
 ### 5. `/auth/password/reset-request` (POST)
 
-- **Purpose**: Request a password reset
-- **Input**: Email
-- **Process**:
-  - Generate and store password reset token
-  - Trigger reset email
-- **Response**: Success message
-
 ### 6. `/auth/password/reset` (POST)
-
-- **Purpose**: Reset password
-- **Input**: Reset token, new password
-- **Process**:
-  - Validate reset token
-  - Update password
-  - Invalidate all existing sessions for the user
-- **Response**: Success message
 
 ### 7. `/auth/verify-email` (GET)
 
-- **Purpose**: Verify user's email
-- **Input**: Verification token (as query parameter)
-- **Process**:
-  - Validate email verification token
-  - Mark email as verified
-- **Response**: Success message or redirect
-
 ### 8. `/auth/resend-verification` (POST)
-
-- **Purpose**: Resend verification email
-- **Input**: Email
-- **Process**:
-  - Generate new verification token
-  - Trigger verification email
-- **Response**: Success message
 
 ### 9. `/auth/me` (GET)
 
-- **Purpose**: Get current user's details
-- **Input**: Access token (in Authorization header)
-- **Process**: Retrieve user details from database
-- **Response**: User details
-
 ### 10. `/auth/update-profile` (PUT)
-
-- **Purpose**: Update user profile
-- **Input**: Access token, updated profile information
-- **Process**: Update user information in database
-- **Response**: Updated user details
 
 ### 11. `/auth/.well-known/jwks.json` (GET)
 
-- **Purpose**: Provide JWKS (JSON Web Key Set)
-- **Process**: Return current public keys used for token verification
-- **Response**: JWKS
+---
 
 ## JWT and JWKS Implementation
 
@@ -121,8 +45,8 @@ The authentication service is designed as a RESTful API using Go. It implements 
 
 ### JWT Structure
 
-- Include standard claims: `iss`, `sub`, `exp`, `iat`
-- Add custom claims: `roles`, `permissions`
+- Includes standard claims: `iss`, `sub`, `exp`, `iat`
+- custom claims can be added in future: `roles`, `permissions`
 
 ### Token Lifetime
 
@@ -133,11 +57,13 @@ The authentication service is designed as a RESTful API using Go. It implements 
 
 - Rotate keys periodically (e.g., every 24 hours)
 - Keep old keys valid for a grace period
-- Implement caching mechanism for JWKS
+- caching mechanism for JWKS
 
 ## Database Design
 
 ### Primary Database: PostgreSQL
+
+### Secondary Database: Redis
 
 #### Users Table
 
@@ -181,54 +107,12 @@ CREATE TABLE permissions (
 );
 ```
 
-#### User_Roles Table
+- relationships between user, roles and permission is maintained through edges
+- ent.io is used as an ORM for this
 
-```sql
-CREATE TABLE user_roles (
-  user_id UUID REFERENCES users(id),
-  role_id INTEGER REFERENCES roles(id),
-  PRIMARY KEY (user_id, role_id)
-);
-```
+---
 
-#### Role_Permissions Table
-
-```sql
-CREATE TABLE role_permissions (
-  role_id INTEGER REFERENCES roles(id),
-  permission_id INTEGER REFERENCES permissions(id),
-  PRIMARY KEY (role_id, permission_id)
-);
-```
-
-### Secondary Database: Redis
-
-#### Data Structures
-
-1. Access Tokens:
-
-   - Key: `access_token:{token_id}`
-   - Value: JSON string containing token data
-   - Expiration: Set to token expiry time
-
-2. Refresh Tokens:
-
-   - Key: `refresh_token:{token_id}`
-   - Value: JSON string containing token data
-   - Expiration: Set to refresh token expiry time
-
-3. User Sessions:
-
-   - Key: `user_session:{user_id}`
-   - Value: Hash containing session data
-   - Expiration: Set to session timeout
-
-4. Rate Limiting:
-   - Key: `rate_limit:{ip_address}`
-   - Value: Sorted set of timestamp:count pairs
-   - Expiration: Set based on rate limit window
-
-## Email Integration
+## Email Integration (TODO)
 
 ### Email Service Interface
 
