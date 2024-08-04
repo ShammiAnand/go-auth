@@ -15,5 +15,5 @@ var (
 )
 
 var (
-	TokenExpiry = 100000
+	TokenExpiry = 1000000 // NOTE: how much is that?
 )

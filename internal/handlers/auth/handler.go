@@ -42,7 +42,7 @@ func NewHandler(client *ent.Client, cache *redis.Client) *Handler {
 func (h *Handler) RegisterRoutes(router *http.ServeMux) {
 
 	// Un-Authenticated Routes
-	router.HandleFunc("GET /.well-known/jwks.json", auth.JWKSHandler)
+	router.HandleFunc("GET /.well-known/jwks.json", auth.JWKSHandler(h.cache))
 	router.HandleFunc("POST /auth/login", h.handleLogin)
 	router.HandleFunc("POST /auth/signup", h.handleRegister)
 

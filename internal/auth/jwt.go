@@ -19,9 +19,19 @@ import (
 	"github.com/shammianand/go-auth/internal/utils"
 )
 
+const (
+	keyPrefix      = "auth:key:"
+	keySetKey      = "auth:keyset"
+	tokenPrefix    = "auth:token:"
+	jwksPrefix     = "auth:jwks"
+	keyExpiryDays  = 30 // NOTE: adjust as needed
+	rsaKeyBits     = 2048
+	tokenCacheTime = time.Minute * 60 // NOTE: cache tokens for 1 hour
+)
+
 var (
-	keys     map[string]*Key
-	keySet   jwk.Set
+	// NOTE: later on think of an alternative to allow for high
+	// throughput request handling
 	keyMutex sync.RWMutex
 )
 
@@ -32,8 +42,48 @@ type Key struct {
 	CreatedAt  time.Time
 }
 
+func InitializeKeys(cache *redis.Client) error {
+	return loadOrGenerateKeys(cache)
+}
+
+func loadOrGenerateKeys(cache *redis.Client) error {
+	keyMutex.Lock()
+	defer keyMutex.Unlock()
+	keysJSON, err := cache.Get(context.Background(), keySetKey).Result()
+	if err == nil {
+		var storedKeys map[string]*Key
+		if err := json.Unmarshal([]byte(keysJSON), &storedKeys); err == nil {
+			return nil
+		}
+	}
+
+	utils.Logger.Info("NO KEYS IN REDIS SO GENERATING AN RSA KEY PAIR")
+	key, err := generateKey()
+	if err != nil {
+		return fmt.Errorf("failed to generate key: %v", err)
+	}
+
+	keysMap := map[string]*Key{key.Kid: key}
+	keysMapInBytes, err := json.Marshal(keysMap)
+	if err != nil {
+		return fmt.Errorf("failed to marshal keys: %v", err)
+	}
+
+	err = cache.Set(
+		context.Background(),
+		keySetKey,
+		keysMapInBytes,
+		time.Hour*24*keyExpiryDays,
+	).Err()
+	if err != nil {
+		return fmt.Errorf("failed to store keys in Redis: %v", err)
+	}
+
+	return updateJWKSet(keysMap, cache)
+}
+
 func generateKey() (*Key, error) {
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	privateKey, err := rsa.GenerateKey(rand.Reader, rsaKeyBits)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate RSA key: %v", err)
 	}
@@ -48,30 +98,34 @@ func generateKey() (*Key, error) {
 	}, nil
 }
 
-func InitializeKeys() error {
-	keyMutex.Lock()
-	defer keyMutex.Unlock()
+func updateJWKSet(keys map[string]*Key, cache *redis.Client) error {
+	keySet := jwk.NewSet()
+	for _, key := range keys {
+		jwkKey, err := jwk.New(key.PublicKey)
+		if err != nil {
+			return fmt.Errorf("failed to create JWK: %v", err)
+		}
+		if err := jwkKey.Set(jwk.KeyIDKey, key.Kid); err != nil {
+			return fmt.Errorf("failed to set key ID: %v", err)
+		}
+		keySet.Add(jwkKey)
+	}
 
-	keys = make(map[string]*Key)
-	keySet = jwk.NewSet()
-
-	key, err := generateKey()
+	jwksJSON, err := json.Marshal(keySet)
 	if err != nil {
-		return fmt.Errorf("failed to generate key: %v", err)
+
+		return fmt.Errorf("failed to marshal JWKS: %v", err)
 	}
 
-	keys[key.Kid] = key
-
-	jwkKey, err := jwk.New(key.PublicKey)
+	err = cache.Set(
+		context.Background(),
+		jwksPrefix,
+		jwksJSON,
+		time.Hour*24*keyExpiryDays,
+	).Err()
 	if err != nil {
-		return fmt.Errorf("failed to create JWK: %v", err)
+		return fmt.Errorf("failed to store JWKS in Redis: %v", err)
 	}
-
-	if err := jwkKey.Set(jwk.KeyIDKey, key.Kid); err != nil {
-		return fmt.Errorf("failed to set key ID: %v", err)
-	}
-
-	keySet.Add(jwkKey)
 
 	return nil
 }
@@ -80,15 +134,23 @@ func CreateJWT(userID uuid.UUID, cache *redis.Client) (string, error) {
 	keyMutex.RLock()
 	defer keyMutex.RUnlock()
 
+	keys, err := getKeys(cache)
+	if err != nil {
+		return "", fmt.Errorf("failed to get keys: %v", err)
+	}
+
 	if len(keys) == 0 {
 		return "", fmt.Errorf("no keys available")
 	}
 
-	// Use the first key in the map (we only have one for now)
-	var key *Key
+	// Use the most recent key
+	var latestKey *Key
+	var latestTime time.Time
 	for _, k := range keys {
-		key = k
-		break
+		if k.CreatedAt.After(latestTime) {
+			latestKey = k
+			latestTime = k.CreatedAt
+		}
 	}
 
 	expiration := time.Second * time.Duration(config.TokenExpiry)
@@ -101,15 +163,19 @@ func CreateJWT(userID uuid.UUID, cache *redis.Client) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	token.Header["kid"] = key.Kid
+	token.Header["kid"] = latestKey.Kid
 
-	tokenString, err := token.SignedString(key.PrivateKey)
+	tokenString, err := token.SignedString(latestKey.PrivateKey)
 	if err != nil {
 		return "", fmt.Errorf("failed to sign token: %v", err)
 	}
 
-	// Store token in Redis
-	err = cache.Set(context.Background(), fmt.Sprintf("token:%s", userID.String()), tokenString, expiration).Err()
+	err = cache.Set(
+		context.Background(),
+		fmt.Sprintf("%s%s", tokenPrefix, userID.String()),
+		tokenString,
+		expiration,
+	).Err()
 	if err != nil {
 		return "", fmt.Errorf("failed to store token in Redis: %v", err)
 	}
@@ -120,7 +186,7 @@ func CreateJWT(userID uuid.UUID, cache *redis.Client) (string, error) {
 func RefreshToken(cache *redis.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		oldTokenString := getTokenFromRequest(r)
-		oldToken, err := validateToken(oldTokenString)
+		oldToken, err := validateToken(oldTokenString, cache)
 		if err != nil {
 			utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("invalid token"))
 			return
@@ -138,14 +204,12 @@ func RefreshToken(cache *redis.Client) http.HandlerFunc {
 			return
 		}
 
-		// Check if old token exists in Redis
-		storedToken, err := cache.Get(context.Background(), fmt.Sprintf("token:%s", userID)).Result()
+		storedToken, err := cache.Get(context.Background(), fmt.Sprintf("%s%s", tokenPrefix, userID)).Result()
 		if err != nil || storedToken != oldTokenString {
 			utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("token not found or invalid"))
 			return
 		}
 
-		// Create new token
 		userUUID, _ := uuid.Parse(userID)
 		newTokenString, err := CreateJWT(userUUID, cache)
 		if err != nil {
@@ -153,18 +217,16 @@ func RefreshToken(cache *redis.Client) http.HandlerFunc {
 			return
 		}
 
-		// Remove old token from Redis
-		cache.Del(context.Background(), fmt.Sprintf("token:%s", userID))
+		cache.Del(context.Background(), fmt.Sprintf("%s%s", tokenPrefix, userID))
 
 		utils.WriteJSON(w, http.StatusOK, map[string]string{"token": newTokenString})
 	}
 }
 
-// FIXME: add a storage deb to look up the user id
 func WithJWTAuth(handlerFunc http.HandlerFunc, cache *redis.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tokenString := getTokenFromRequest(r)
-		token, err := validateToken(tokenString)
+		token, err := validateToken(tokenString, cache)
 		if err != nil {
 			log.Printf("failed to validate token: %v", err)
 			permissionDenied(w)
@@ -185,8 +247,7 @@ func WithJWTAuth(handlerFunc http.HandlerFunc, cache *redis.Client) http.Handler
 			return
 		}
 
-		// Check if token exists in Redis
-		storedToken, err := cache.Get(context.Background(), fmt.Sprintf("token:%s", userID)).Result()
+		storedToken, err := cache.Get(context.Background(), fmt.Sprintf("%s%s", tokenPrefix, userID)).Result()
 		if err != nil || storedToken != tokenString {
 			log.Printf("token not found in Redis or mismatch")
 			permissionDenied(w)
@@ -206,9 +267,14 @@ func getTokenFromRequest(r *http.Request) string {
 	return ""
 }
 
-func validateToken(tokenString string) (*jwt.Token, error) {
+func validateToken(tokenString string, cache *redis.Client) (*jwt.Token, error) {
 	keyMutex.RLock()
 	defer keyMutex.RUnlock()
+
+	keys, err := getKeys(cache)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get keys: %v", err)
+	}
 
 	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodRSA); !ok {
@@ -244,16 +310,29 @@ func GetUserIdFromContext(ctx context.Context) string {
 	return userID
 }
 
-func JWKSHandler(w http.ResponseWriter, r *http.Request) {
-	keyMutex.RLock()
-	defer keyMutex.RUnlock()
+func JWKSHandler(cache *redis.Client) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		jwksJSON, err := cache.Get(context.Background(), "auth:jwks").Result()
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
 
-	jwks, err := json.Marshal(keySet)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(jwksJSON))
+	}
+}
+
+func getKeys(cache *redis.Client) (map[string]*Key, error) {
+	keysJSON, err := cache.Get(context.Background(), keySetKey).Result()
 	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
+		return nil, fmt.Errorf("failed to get keys from Redis: %v", err)
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(jwks)
+	var keys map[string]*Key
+	if err := json.Unmarshal([]byte(keysJSON), &keys); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal keys: %v", err)
+	}
+
+	return keys, nil
 }
