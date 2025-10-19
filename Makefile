@@ -10,12 +10,12 @@ PROJECT_ROOT := $(shell pwd)
 
 compose-up:
 	@echo "Starting Postgres and Redis ..."
-	sudo docker-compose up -d
+	docker-compose up -d
 	@echo "DONE"
 
 compose-down:
 	@echo "Stopping Postgres and Redis ..."
-	sudo docker-compose down
+	docker-compose down
 	@echo "DONE"
 
 build:

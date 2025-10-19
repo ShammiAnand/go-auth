@@ -1,6 +1,6 @@
 module github.com/shammianand/go-auth
 
-go 1.22.1
+go 1.24.0
 
 require (
 	entgo.io/ent v0.13.1
@@ -35,7 +35,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/zclconf/go-cty v1.8.0 // indirect
-	golang.org/x/mod v0.17.0 // indirect
-	golang.org/x/sync v0.7.0 // indirect
+	golang.org/x/mod v0.29.0 // indirect
+	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 )
