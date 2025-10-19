@@ -10,16 +10,15 @@ import (
 	a "github.com/shammianand/go-auth/internal/auth"
 	"github.com/shammianand/go-auth/internal/handlers/auth"
 	"github.com/shammianand/go-auth/internal/middleware"
-	"github.com/shammianand/go-auth/internal/storage"
 	"github.com/shammianand/go-auth/internal/utils"
 )
 
 type APIServer struct {
-	addr   string
+	addr string
+
+	// TODO: interface it out with a db pool
 	client *ent.Client
-	// NOTE: i am not sure if this belong here
-	// confused between should be have client conn available all the time or create it?
-	// for now i have made it available to APIServer
+
 	cache  *redis.Client
 	logger *slog.Logger
 }
@@ -37,19 +36,13 @@ func NewAPIServer(addr string, client *ent.Client, cache *redis.Client) *APIServ
 
 func (s *APIServer) Run() error {
 
-	// TODO: do not use AutoMigrate in PROD
-	err := storage.AutoMigrate(*s.client)
-	if err != nil {
-		return err
-	}
-
 	router := http.NewServeMux()
 	subrouter := utils.Subrouter(router, "/api/v1")
 
 	// TODO: later on we need to think about rotating these keys
 	// at least every 24 hours
 	// maybe have a job that calls this every 24 hours
-	err = a.InitializeKeys(s.cache)
+	err := a.InitializeKeys(s.cache)
 	if err != nil {
 		s.logger.Error("failed to InitializeKeys", "error", err)
 		return err

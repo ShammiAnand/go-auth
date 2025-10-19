@@ -12,8 +12,9 @@ var (
 	ENV_REDIS_PORT         = os.Getenv("REDIS_PORT")
 	ENV_SECRET_KEY_ID      = os.Getenv("SECRET_KEY_ID")
 	ENV_SECRET_PRIVATE_KEY = os.Getenv("SECRET_PRIVATE_KEY")
+	ENV_API_PORT           = os.Getenv("API_PORT")
 )
 
 var (
-	TokenExpiry = 1000000 // NOTE: how much is that?
+	TokenExpiry = 1000000
 )

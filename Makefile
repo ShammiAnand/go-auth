@@ -19,24 +19,19 @@ compose-down:
 	@echo "DONE"
 
 build:
-	@echo "Building the application..."
 	@go build -o bin/go-auth cmd/main.go
-	@echo "Build complete."
 
 test:
-	@echo "Running tests..."
 	@go test -v ./...
-	@echo "Tests complete."
 
 
 run: build
-	@echo "Starting the application..."
 	@./bin/go-auth
 
+migrate: build
+	@./bin/go-auth --migrate true
 
 gen-ent:
 	@echo "Generating Ent code..."
 	@go generate ./ent
-	@echo "Ent code generation complete."
 
-start: gen-ent build run
