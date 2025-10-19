@@ -39,67 +39,49 @@ func init() {
 }
 
 func runServer(cmd *cobra.Command, args []string) error {
-	// Setup logger
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	}))
 	slog.SetDefault(logger)
 
-	// Connect to database
 	entClient, err := storage.DBConnect()
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 	defer entClient.Close()
 
-	// Run auto-migration
 	err = storage.AutoMigrate(*entClient)
 	if err != nil {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
 
-	// Connect to Redis
 	redisClient := storage.GetRedisClient()
 
-	// Initialize JWKS keys
 	err = auth.InitializeKeys(redisClient)
 	if err != nil {
 		return fmt.Errorf("failed to initialize JWKS keys: %w", err)
 	}
 
-	// Determine port
 	port := serverPort
 	if port == "" {
 		port = config.ENV_API_PORT
 	}
 
-	// Setup Gin router
 	if os.Getenv("GIN_MODE") == "" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
 	router := gin.New()
 
-	// Global middleware
 	router.Use(middleware.RequestID())
 	router.Use(middleware.Logger(logger))
 	router.Use(middleware.CORS())
 	router.Use(gin.Recovery())
 
-	// Health check endpoints
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 
-	router.GET("/ready", func(c *gin.Context) {
-		// Check database connectivity
-		if err := entClient.Schema.Create(context.Background()); err != nil {
-			// Schema exists is fine
-		}
-		c.JSON(200, gin.H{"status": "ready", "service": "go-auth"})
-	})
-
-	// Initialize email service
 	emailProvider := provider.NewMailhogProvider(
 		"localhost", // TODO: from config
 		"1025",      // TODO: from config
@@ -114,10 +96,8 @@ func runServer(cmd *cobra.Command, args []string) error {
 		"Go-Auth",
 	)
 
-	// API v1 routes
 	v1 := router.Group("/api/v1")
 	{
-		// Public JWKS endpoint
 		v1.GET("/.well-known/jwks.json", func(c *gin.Context) {
 			jwksJSON, err := redisClient.Get(context.Background(), "auth:jwks").Result()
 			if err != nil {
@@ -128,12 +108,10 @@ func runServer(cmd *cobra.Command, args []string) error {
 			c.String(200, jwksJSON)
 		})
 
-		// Register module routes
 		authmodule.RegisterRoutes(v1, entClient, redisClient, emailSvc, logger)
 		rbacmodule.RegisterRoutes(v1, entClient, redisClient, logger)
 	}
 
-	// Create HTTP server
 	srv := &http.Server{
 		Addr:         ":" + port,
 		Handler:      router,
@@ -142,7 +120,6 @@ func runServer(cmd *cobra.Command, args []string) error {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	// Start server in goroutine
 	go func() {
 		logger.Info("Starting HTTP server", "port", port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -151,14 +128,12 @@ func runServer(cmd *cobra.Command, args []string) error {
 		}
 	}()
 
-	// Wait for interrupt signal for graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
 	logger.Info("Shutting down server...")
 
-	// Graceful shutdown with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

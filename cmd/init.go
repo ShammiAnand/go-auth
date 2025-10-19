@@ -36,31 +36,26 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	logger.Info("Starting RBAC initialization", "config", configPath)
 
-	// Read config file
 	configData, err := os.ReadFile(configPath)
 	if err != nil {
 		return fmt.Errorf("failed to read config file: %w", err)
 	}
 
-	// Parse YAML
 	var config bootstrap.RBACConfig
 	if err := yaml.Unmarshal(configData, &config); err != nil {
 		return fmt.Errorf("failed to parse YAML config: %w", err)
 	}
 
-	// Validate config
 	if err := validateConfig(&config); err != nil {
 		return fmt.Errorf("invalid config: %w", err)
 	}
 
-	// Connect to database
 	entClient, err := storage.DBConnect()
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 	defer entClient.Close()
 
-	// Run migrations first
 	err = storage.AutoMigrate(*entClient)
 	if err != nil {
 		return fmt.Errorf("failed to run migrations: %w", err)
@@ -68,10 +63,8 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	ctx := context.Background()
 
-	// Initialize RBAC bootstrap service
 	bootstrapService := bootstrap.NewBootstrapService(entClient, logger)
 
-	// Bootstrap permissions
 	logger.Info("Bootstrapping permissions", "count", len(config.Permissions))
 	createdPerms, updatedPerms, err := bootstrapService.BootstrapPermissions(ctx, config.Permissions)
 	if err != nil {
@@ -83,7 +76,6 @@ func runInit(cmd *cobra.Command, args []string) error {
 		"total", len(config.Permissions),
 	)
 
-	// Bootstrap roles
 	logger.Info("Bootstrapping roles", "count", len(config.Roles))
 	createdRoles, updatedRoles, err := bootstrapService.BootstrapRoles(ctx, config.Roles)
 	if err != nil {
@@ -95,7 +87,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		"total", len(config.Roles),
 	)
 
-	fmt.Printf("\n✅ RBAC initialization completed successfully!\n\n")
+	fmt.Printf("   RBAC initialization completed successfully!\n\n")
 	fmt.Printf("   Permissions: %d created, %d updated\n", createdPerms, updatedPerms)
 	fmt.Printf("   Roles: %d created, %d updated\n\n", createdRoles, updatedRoles)
 
@@ -111,7 +103,6 @@ func validateConfig(config *bootstrap.RBACConfig) error {
 		return fmt.Errorf("no roles defined in config")
 	}
 
-	// Validate permission codes are unique
 	permCodes := make(map[string]bool)
 	for _, perm := range config.Permissions {
 		if perm.Code == "" {
@@ -123,7 +114,6 @@ func validateConfig(config *bootstrap.RBACConfig) error {
 		permCodes[perm.Code] = true
 	}
 
-	// Validate role codes are unique
 	roleCodes := make(map[string]bool)
 	for _, role := range config.Roles {
 		if role.Code == "" {
@@ -135,7 +125,6 @@ func validateConfig(config *bootstrap.RBACConfig) error {
 		roleCodes[role.Code] = true
 	}
 
-	// Ensure at least one default role
 	hasDefault := false
 	for _, role := range config.Roles {
 		if role.IsDefault {

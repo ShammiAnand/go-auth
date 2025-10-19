@@ -10,6 +10,7 @@ import (
 	models "github.com/shammianand/go-auth/ent"
 	"github.com/shammianand/go-auth/ent/migrate"
 	"github.com/shammianand/go-auth/internal/config"
+	"github.com/shammianand/go-auth/internal/utils"
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
@@ -24,6 +25,7 @@ func connectWithHostPort() (*sql.DB, error) {
 		config.ENV_DB_PORT,
 		config.ENV_DB_NAME,
 	)
+	utils.Logger.Info("databaseUrl", "url", databaseUrl)
 	db, err := sql.Open("pgx", databaseUrl)
 	if err != nil {
 		log.Fatal("failed to connect to DB")

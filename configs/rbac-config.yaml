@@ -2,7 +2,6 @@
 # This file defines the default roles and permissions for the authentication system
 
 permissions:
-  # User Management Permissions
   - code: "users.read"
     name: "View Users"
     description: "Can view user list and details"
@@ -27,7 +26,6 @@ permissions:
     resource: "users"
     action: "write"
 
-  # RBAC Management Permissions
   - code: "rbac.roles.read"
     name: "View Roles"
     description: "Can view roles and their permissions"
@@ -64,7 +62,6 @@ permissions:
     resource: "audit"
     action: "read"
 
-  # System Administration
   - code: "system.admin"
     name: "System Administration"
     description: "Full system administrative access"
@@ -72,7 +69,6 @@ permissions:
     action: "admin"
 
 roles:
-  # Super Admin - Only one allowed in the system
   - code: "super-admin"
     name: "Super Administrator"
     description: "System super administrator with full access (only one allowed)"
@@ -80,9 +76,8 @@ roles:
     is_default: false
     max_users: 1
     permissions:
-      - "*"  # All permissions
+      - "*"
 
-  # Admin - Standard administrator
   - code: "admin"
     name: "Administrator"
     description: "Standard administrator with user and RBAC management"
@@ -92,7 +87,6 @@ roles:
       - "users.*"
       - "rbac.*"
 
-  # User - Default role for new signups
   - code: "user"
     name: "Standard User"
     description: "Basic user with self-management permissions"

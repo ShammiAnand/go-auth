@@ -54,7 +54,6 @@ func createSuperuser(cmd *cobra.Command, args []string) error {
 		Level: slog.LevelInfo,
 	}))
 
-	// Connect to database
 	entClient, err := storage.DBConnect()
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
@@ -63,7 +62,6 @@ func createSuperuser(cmd *cobra.Command, args []string) error {
 
 	ctx := context.Background()
 
-	// Check if super-admin role exists
 	superAdminRole, err := entClient.Roles.Query().
 		Where(roles.CodeEQ("super-admin")).
 		Only(ctx)
@@ -77,10 +75,9 @@ func createSuperuser(cmd *cobra.Command, args []string) error {
 
 	// Check if there's already a super-admin
 	if superAdminRole.MaxUsers != nil && *superAdminRole.MaxUsers == 1 {
-		// Count existing users with this role
 		existingCount, err := entClient.UserRoles.Query().
 			Where(
-				// TODO: Add filter by role_id when UserRoles edges are properly set up
+			// TODO: Add filter by role_id when UserRoles edges are properly set up
 			).
 			Count(ctx)
 
@@ -109,14 +106,12 @@ func createSuperuser(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create user: %w", err)
 	}
 
-	// Assign super-admin role
 	_, err = entClient.UserRoles.Create().
 		SetUserID(user.ID).
 		SetRoleID(superAdminRole.ID).
 		Save(ctx)
 
 	if err != nil {
-		// Rollback user creation if role assignment fails
 		entClient.Users.DeleteOne(user).Exec(ctx)
 		return fmt.Errorf("failed to assign super-admin role: %w", err)
 	}

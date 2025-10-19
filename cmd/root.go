@@ -28,6 +28,6 @@ func Execute() {
 }
 
 func init() {
-	// Global flags can be added here
+	// NOTE: global flags can be added here
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.go-auth.yaml)")
 }

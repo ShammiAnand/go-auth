@@ -108,8 +108,6 @@ func runJWKSRefresh(cmd *cobra.Command, args []string) error {
 }
 
 func refreshJWKSKeys(redisClient *redis.Client, logger *slog.Logger) error {
-	// This would implement the actual key rotation logic
-	// For now, we'll just re-initialize which generates new keys if needed
 	err := auth.InitializeKeys(redisClient)
 	if err != nil {
 		return fmt.Errorf("failed to refresh keys: %w", err)

@@ -35,7 +35,6 @@ func (Users) Fields() []ent.Field {
 		field.Bool("email_verified").
 			Default(false),
 
-		// NOTE: below field are for implementing passwoord reset and email verification
 		field.String("verification_token").
 			Optional().
 			Nillable(),
@@ -49,8 +48,7 @@ func (Users) Fields() []ent.Field {
 			Optional().
 			Nillable(),
 
-		// NOTE: for future needs
-		field.JSON("metadata", map[string]interface{}{}).
+		field.JSON("metadata", map[string]any{}).
 			Optional(),
 	}
 }
