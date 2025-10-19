@@ -1,0 +1,103 @@
+# RBAC Configuration for Go-Auth
+# This file defines the default roles and permissions for the authentication system
+
+permissions:
+  # User Management Permissions
+  - code: "users.read"
+    name: "View Users"
+    description: "Can view user list and details"
+    resource: "users"
+    action: "read"
+
+  - code: "users.write"
+    name: "Manage Users"
+    description: "Can create, update, and delete users"
+    resource: "users"
+    action: "write"
+
+  - code: "users.read.self"
+    name: "View Own Profile"
+    description: "Can view own user profile"
+    resource: "users"
+    action: "read"
+
+  - code: "users.write.self"
+    name: "Edit Own Profile"
+    description: "Can edit own user profile"
+    resource: "users"
+    action: "write"
+
+  # RBAC Management Permissions
+  - code: "rbac.roles.read"
+    name: "View Roles"
+    description: "Can view roles and their permissions"
+    resource: "roles"
+    action: "read"
+
+  - code: "rbac.roles.write"
+    name: "Manage Roles"
+    description: "Can create, update, and delete roles"
+    resource: "roles"
+    action: "write"
+
+  - code: "rbac.permissions.read"
+    name: "View Permissions"
+    description: "Can view permission catalog"
+    resource: "permissions"
+    action: "read"
+
+  - code: "rbac.permissions.write"
+    name: "Manage Permissions"
+    description: "Can manage permission assignments"
+    resource: "permissions"
+    action: "write"
+
+  - code: "rbac.assign"
+    name: "Assign Roles"
+    description: "Can assign and remove roles from users"
+    resource: "rbac"
+    action: "assign"
+
+  - code: "rbac.audit.read"
+    name: "View Audit Logs"
+    description: "Can view RBAC audit logs"
+    resource: "audit"
+    action: "read"
+
+  # System Administration
+  - code: "system.admin"
+    name: "System Administration"
+    description: "Full system administrative access"
+    resource: "system"
+    action: "admin"
+
+roles:
+  # Super Admin - Only one allowed in the system
+  - code: "super-admin"
+    name: "Super Administrator"
+    description: "System super administrator with full access (only one allowed)"
+    is_system: true
+    is_default: false
+    max_users: 1
+    permissions:
+      - "*"  # All permissions
+
+  # Admin - Standard administrator
+  - code: "admin"
+    name: "Administrator"
+    description: "Standard administrator with user and RBAC management"
+    is_system: true
+    is_default: false
+    permissions:
+      - "users.*"
+      - "rbac.*"
+
+  # User - Default role for new signups
+  - code: "user"
+    name: "Standard User"
+    description: "Basic user with self-management permissions"
+    is_system: true
+    is_default: true
+    permissions:
+      - "users.read.self"
+      - "users.write.self"

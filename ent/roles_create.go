@@ -11,9 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
-	"github.com/shammianand/go-auth/ent/permissions"
+	"github.com/shammianand/go-auth/ent/rolepermissions"
 	"github.com/shammianand/go-auth/ent/roles"
-	"github.com/shammianand/go-auth/ent/users"
+	"github.com/shammianand/go-auth/ent/userroles"
 )
 
 // RolesCreate is the builder for creating a Roles entity.
@@ -21,6 +21,12 @@ type RolesCreate struct {
 	config
 	mutation *RolesMutation
 	hooks    []Hook
+}
+
+// SetCode sets the "code" field.
+func (rc *RolesCreate) SetCode(s string) *RolesCreate {
+	rc.mutation.SetCode(s)
+	return rc
 }
 
 // SetName sets the "name" field.
@@ -43,6 +49,48 @@ func (rc *RolesCreate) SetNillableDescription(s *string) *RolesCreate {
 	return rc
 }
 
+// SetIsSystem sets the "is_system" field.
+func (rc *RolesCreate) SetIsSystem(b bool) *RolesCreate {
+	rc.mutation.SetIsSystem(b)
+	return rc
+}
+
+// SetNillableIsSystem sets the "is_system" field if the given value is not nil.
+func (rc *RolesCreate) SetNillableIsSystem(b *bool) *RolesCreate {
+	if b != nil {
+		rc.SetIsSystem(*b)
+	}
+	return rc
+}
+
+// SetIsDefault sets the "is_default" field.
+func (rc *RolesCreate) SetIsDefault(b bool) *RolesCreate {
+	rc.mutation.SetIsDefault(b)
+	return rc
+}
+
+// SetNillableIsDefault sets the "is_default" field if the given value is not nil.
+func (rc *RolesCreate) SetNillableIsDefault(b *bool) *RolesCreate {
+	if b != nil {
+		rc.SetIsDefault(*b)
+	}
+	return rc
+}
+
+// SetMaxUsers sets the "max_users" field.
+func (rc *RolesCreate) SetMaxUsers(i int) *RolesCreate {
+	rc.mutation.SetMaxUsers(i)
+	return rc
+}
+
+// SetNillableMaxUsers sets the "max_users" field if the given value is not nil.
+func (rc *RolesCreate) SetNillableMaxUsers(i *int) *RolesCreate {
+	if i != nil {
+		rc.SetMaxUsers(*i)
+	}
+	return rc
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (rc *RolesCreate) SetCreatedAt(t time.Time) *RolesCreate {
 	rc.mutation.SetCreatedAt(t)
@@ -57,40 +105,54 @@ func (rc *RolesCreate) SetNillableCreatedAt(t *time.Time) *RolesCreate {
 	return rc
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (rc *RolesCreate) SetUpdatedAt(t time.Time) *RolesCreate {
+	rc.mutation.SetUpdatedAt(t)
+	return rc
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (rc *RolesCreate) SetNillableUpdatedAt(t *time.Time) *RolesCreate {
+	if t != nil {
+		rc.SetUpdatedAt(*t)
+	}
+	return rc
+}
+
 // SetID sets the "id" field.
 func (rc *RolesCreate) SetID(i int) *RolesCreate {
 	rc.mutation.SetID(i)
 	return rc
 }
 
-// AddUserIDs adds the "users" edge to the Users entity by IDs.
-func (rc *RolesCreate) AddUserIDs(ids ...uuid.UUID) *RolesCreate {
-	rc.mutation.AddUserIDs(ids...)
+// AddUserRoleIDs adds the "user_roles" edge to the UserRoles entity by IDs.
+func (rc *RolesCreate) AddUserRoleIDs(ids ...uuid.UUID) *RolesCreate {
+	rc.mutation.AddUserRoleIDs(ids...)
 	return rc
 }
 
-// AddUsers adds the "users" edges to the Users entity.
-func (rc *RolesCreate) AddUsers(u ...*Users) *RolesCreate {
+// AddUserRoles adds the "user_roles" edges to the UserRoles entity.
+func (rc *RolesCreate) AddUserRoles(u ...*UserRoles) *RolesCreate {
 	ids := make([]uuid.UUID, len(u))
 	for i := range u {
 		ids[i] = u[i].ID
 	}
-	return rc.AddUserIDs(ids...)
+	return rc.AddUserRoleIDs(ids...)
 }
 
-// AddPermissionIDs adds the "permissions" edge to the Permissions entity by IDs.
-func (rc *RolesCreate) AddPermissionIDs(ids ...int) *RolesCreate {
-	rc.mutation.AddPermissionIDs(ids...)
+// AddRolePermissionIDs adds the "role_permissions" edge to the RolePermissions entity by IDs.
+func (rc *RolesCreate) AddRolePermissionIDs(ids ...int) *RolesCreate {
+	rc.mutation.AddRolePermissionIDs(ids...)
 	return rc
 }
 
-// AddPermissions adds the "permissions" edges to the Permissions entity.
-func (rc *RolesCreate) AddPermissions(p ...*Permissions) *RolesCreate {
-	ids := make([]int, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+// AddRolePermissions adds the "role_permissions" edges to the RolePermissions entity.
+func (rc *RolesCreate) AddRolePermissions(r ...*RolePermissions) *RolesCreate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
 	}
-	return rc.AddPermissionIDs(ids...)
+	return rc.AddRolePermissionIDs(ids...)
 }
 
 // Mutation returns the RolesMutation object of the builder.
@@ -128,19 +190,53 @@ func (rc *RolesCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (rc *RolesCreate) defaults() {
+	if _, ok := rc.mutation.IsSystem(); !ok {
+		v := roles.DefaultIsSystem
+		rc.mutation.SetIsSystem(v)
+	}
+	if _, ok := rc.mutation.IsDefault(); !ok {
+		v := roles.DefaultIsDefault
+		rc.mutation.SetIsDefault(v)
+	}
 	if _, ok := rc.mutation.CreatedAt(); !ok {
 		v := roles.DefaultCreatedAt()
 		rc.mutation.SetCreatedAt(v)
+	}
+	if _, ok := rc.mutation.UpdatedAt(); !ok {
+		v := roles.DefaultUpdatedAt()
+		rc.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (rc *RolesCreate) check() error {
+	if _, ok := rc.mutation.Code(); !ok {
+		return &ValidationError{Name: "code", err: errors.New(`ent: missing required field "Roles.code"`)}
+	}
+	if v, ok := rc.mutation.Code(); ok {
+		if err := roles.CodeValidator(v); err != nil {
+			return &ValidationError{Name: "code", err: fmt.Errorf(`ent: validator failed for field "Roles.code": %w`, err)}
+		}
+	}
 	if _, ok := rc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Roles.name"`)}
 	}
+	if v, ok := rc.mutation.Name(); ok {
+		if err := roles.NameValidator(v); err != nil {
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Roles.name": %w`, err)}
+		}
+	}
+	if _, ok := rc.mutation.IsSystem(); !ok {
+		return &ValidationError{Name: "is_system", err: errors.New(`ent: missing required field "Roles.is_system"`)}
+	}
+	if _, ok := rc.mutation.IsDefault(); !ok {
+		return &ValidationError{Name: "is_default", err: errors.New(`ent: missing required field "Roles.is_default"`)}
+	}
 	if _, ok := rc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Roles.created_at"`)}
+	}
+	if _, ok := rc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Roles.updated_at"`)}
 	}
 	return nil
 }
@@ -174,6 +270,10 @@ func (rc *RolesCreate) createSpec() (*Roles, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
+	if value, ok := rc.mutation.Code(); ok {
+		_spec.SetField(roles.FieldCode, field.TypeString, value)
+		_node.Code = value
+	}
 	if value, ok := rc.mutation.Name(); ok {
 		_spec.SetField(roles.FieldName, field.TypeString, value)
 		_node.Name = value
@@ -182,19 +282,35 @@ func (rc *RolesCreate) createSpec() (*Roles, *sqlgraph.CreateSpec) {
 		_spec.SetField(roles.FieldDescription, field.TypeString, value)
 		_node.Description = value
 	}
+	if value, ok := rc.mutation.IsSystem(); ok {
+		_spec.SetField(roles.FieldIsSystem, field.TypeBool, value)
+		_node.IsSystem = value
+	}
+	if value, ok := rc.mutation.IsDefault(); ok {
+		_spec.SetField(roles.FieldIsDefault, field.TypeBool, value)
+		_node.IsDefault = value
+	}
+	if value, ok := rc.mutation.MaxUsers(); ok {
+		_spec.SetField(roles.FieldMaxUsers, field.TypeInt, value)
+		_node.MaxUsers = &value
+	}
 	if value, ok := rc.mutation.CreatedAt(); ok {
 		_spec.SetField(roles.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if nodes := rc.mutation.UsersIDs(); len(nodes) > 0 {
+	if value, ok := rc.mutation.UpdatedAt(); ok {
+		_spec.SetField(roles.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
+	}
+	if nodes := rc.mutation.UserRolesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   roles.UsersTable,
-			Columns: roles.UsersPrimaryKey,
+			Table:   roles.UserRolesTable,
+			Columns: []string{roles.UserRolesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(userroles.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -202,15 +318,15 @@ func (rc *RolesCreate) createSpec() (*Roles, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := rc.mutation.PermissionsIDs(); len(nodes) > 0 {
+	if nodes := rc.mutation.RolePermissionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   roles.PermissionsTable,
-			Columns: roles.PermissionsPrimaryKey,
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   roles.RolePermissionsTable,
+			Columns: []string{roles.RolePermissionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(permissions.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(rolepermissions.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

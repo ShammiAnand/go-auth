@@ -11,7 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/shammianand/go-auth/ent/permissions"
-	"github.com/shammianand/go-auth/ent/roles"
+	"github.com/shammianand/go-auth/ent/rolepermissions"
 )
 
 // PermissionsCreate is the builder for creating a Permissions entity.
@@ -19,6 +19,12 @@ type PermissionsCreate struct {
 	config
 	mutation *PermissionsMutation
 	hooks    []Hook
+}
+
+// SetCode sets the "code" field.
+func (pc *PermissionsCreate) SetCode(s string) *PermissionsCreate {
+	pc.mutation.SetCode(s)
+	return pc
 }
 
 // SetName sets the "name" field.
@@ -41,6 +47,34 @@ func (pc *PermissionsCreate) SetNillableDescription(s *string) *PermissionsCreat
 	return pc
 }
 
+// SetResource sets the "resource" field.
+func (pc *PermissionsCreate) SetResource(s string) *PermissionsCreate {
+	pc.mutation.SetResource(s)
+	return pc
+}
+
+// SetNillableResource sets the "resource" field if the given value is not nil.
+func (pc *PermissionsCreate) SetNillableResource(s *string) *PermissionsCreate {
+	if s != nil {
+		pc.SetResource(*s)
+	}
+	return pc
+}
+
+// SetAction sets the "action" field.
+func (pc *PermissionsCreate) SetAction(s string) *PermissionsCreate {
+	pc.mutation.SetAction(s)
+	return pc
+}
+
+// SetNillableAction sets the "action" field if the given value is not nil.
+func (pc *PermissionsCreate) SetNillableAction(s *string) *PermissionsCreate {
+	if s != nil {
+		pc.SetAction(*s)
+	}
+	return pc
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (pc *PermissionsCreate) SetCreatedAt(t time.Time) *PermissionsCreate {
 	pc.mutation.SetCreatedAt(t)
@@ -55,25 +89,39 @@ func (pc *PermissionsCreate) SetNillableCreatedAt(t *time.Time) *PermissionsCrea
 	return pc
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (pc *PermissionsCreate) SetUpdatedAt(t time.Time) *PermissionsCreate {
+	pc.mutation.SetUpdatedAt(t)
+	return pc
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (pc *PermissionsCreate) SetNillableUpdatedAt(t *time.Time) *PermissionsCreate {
+	if t != nil {
+		pc.SetUpdatedAt(*t)
+	}
+	return pc
+}
+
 // SetID sets the "id" field.
 func (pc *PermissionsCreate) SetID(i int) *PermissionsCreate {
 	pc.mutation.SetID(i)
 	return pc
 }
 
-// AddRoleIDs adds the "roles" edge to the Roles entity by IDs.
-func (pc *PermissionsCreate) AddRoleIDs(ids ...int) *PermissionsCreate {
-	pc.mutation.AddRoleIDs(ids...)
+// AddRolePermissionIDs adds the "role_permissions" edge to the RolePermissions entity by IDs.
+func (pc *PermissionsCreate) AddRolePermissionIDs(ids ...int) *PermissionsCreate {
+	pc.mutation.AddRolePermissionIDs(ids...)
 	return pc
 }
 
-// AddRoles adds the "roles" edges to the Roles entity.
-func (pc *PermissionsCreate) AddRoles(r ...*Roles) *PermissionsCreate {
+// AddRolePermissions adds the "role_permissions" edges to the RolePermissions entity.
+func (pc *PermissionsCreate) AddRolePermissions(r ...*RolePermissions) *PermissionsCreate {
 	ids := make([]int, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
-	return pc.AddRoleIDs(ids...)
+	return pc.AddRolePermissionIDs(ids...)
 }
 
 // Mutation returns the PermissionsMutation object of the builder.
@@ -115,15 +163,35 @@ func (pc *PermissionsCreate) defaults() {
 		v := permissions.DefaultCreatedAt()
 		pc.mutation.SetCreatedAt(v)
 	}
+	if _, ok := pc.mutation.UpdatedAt(); !ok {
+		v := permissions.DefaultUpdatedAt()
+		pc.mutation.SetUpdatedAt(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (pc *PermissionsCreate) check() error {
+	if _, ok := pc.mutation.Code(); !ok {
+		return &ValidationError{Name: "code", err: errors.New(`ent: missing required field "Permissions.code"`)}
+	}
+	if v, ok := pc.mutation.Code(); ok {
+		if err := permissions.CodeValidator(v); err != nil {
+			return &ValidationError{Name: "code", err: fmt.Errorf(`ent: validator failed for field "Permissions.code": %w`, err)}
+		}
+	}
 	if _, ok := pc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Permissions.name"`)}
 	}
+	if v, ok := pc.mutation.Name(); ok {
+		if err := permissions.NameValidator(v); err != nil {
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Permissions.name": %w`, err)}
+		}
+	}
 	if _, ok := pc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Permissions.created_at"`)}
+	}
+	if _, ok := pc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Permissions.updated_at"`)}
 	}
 	return nil
 }
@@ -157,6 +225,10 @@ func (pc *PermissionsCreate) createSpec() (*Permissions, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
+	if value, ok := pc.mutation.Code(); ok {
+		_spec.SetField(permissions.FieldCode, field.TypeString, value)
+		_node.Code = value
+	}
 	if value, ok := pc.mutation.Name(); ok {
 		_spec.SetField(permissions.FieldName, field.TypeString, value)
 		_node.Name = value
@@ -165,19 +237,31 @@ func (pc *PermissionsCreate) createSpec() (*Permissions, *sqlgraph.CreateSpec) {
 		_spec.SetField(permissions.FieldDescription, field.TypeString, value)
 		_node.Description = value
 	}
+	if value, ok := pc.mutation.Resource(); ok {
+		_spec.SetField(permissions.FieldResource, field.TypeString, value)
+		_node.Resource = value
+	}
+	if value, ok := pc.mutation.Action(); ok {
+		_spec.SetField(permissions.FieldAction, field.TypeString, value)
+		_node.Action = value
+	}
 	if value, ok := pc.mutation.CreatedAt(); ok {
 		_spec.SetField(permissions.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if nodes := pc.mutation.RolesIDs(); len(nodes) > 0 {
+	if value, ok := pc.mutation.UpdatedAt(); ok {
+		_spec.SetField(permissions.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
+	}
+	if nodes := pc.mutation.RolePermissionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   permissions.RolesTable,
-			Columns: permissions.RolesPrimaryKey,
+			Table:   permissions.RolePermissionsTable,
+			Columns: []string{permissions.RolePermissionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(roles.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(rolepermissions.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

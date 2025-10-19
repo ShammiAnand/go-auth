@@ -8,12 +8,92 @@ import (
 )
 
 var (
+	// AuditLogsColumns holds the columns for the "audit_logs" table.
+	AuditLogsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "actor_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "action_type", Type: field.TypeString},
+		{Name: "resource_type", Type: field.TypeString},
+		{Name: "resource_id", Type: field.TypeString, Nullable: true},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
+		{Name: "changes", Type: field.TypeJSON, Nullable: true},
+		{Name: "ip_address", Type: field.TypeString, Nullable: true},
+		{Name: "user_agent", Type: field.TypeString, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+	}
+	// AuditLogsTable holds the schema information for the "audit_logs" table.
+	AuditLogsTable = &schema.Table{
+		Name:       "audit_logs",
+		Columns:    AuditLogsColumns,
+		PrimaryKey: []*schema.Column{AuditLogsColumns[0]},
+	}
+	// EmailLogsColumns holds the columns for the "email_logs" table.
+	EmailLogsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "user_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "recipient", Type: field.TypeString},
+		{Name: "email_type", Type: field.TypeString},
+		{Name: "subject", Type: field.TypeString, Nullable: true},
+		{Name: "status", Type: field.TypeString, Default: "sent"},
+		{Name: "provider", Type: field.TypeString, Default: "mailhog"},
+		{Name: "provider_message_id", Type: field.TypeString, Nullable: true},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
+		{Name: "error_message", Type: field.TypeString, Nullable: true},
+		{Name: "sent_at", Type: field.TypeTime},
+		{Name: "delivered_at", Type: field.TypeTime, Nullable: true},
+	}
+	// EmailLogsTable holds the schema information for the "email_logs" table.
+	EmailLogsTable = &schema.Table{
+		Name:       "email_logs",
+		Columns:    EmailLogsColumns,
+		PrimaryKey: []*schema.Column{EmailLogsColumns[0]},
+	}
+	// EmailVerificationsColumns holds the columns for the "email_verifications" table.
+	EmailVerificationsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "user_id", Type: field.TypeUUID},
+		{Name: "email", Type: field.TypeString},
+		{Name: "token", Type: field.TypeString, Unique: true},
+		{Name: "expires_at", Type: field.TypeTime},
+		{Name: "is_used", Type: field.TypeBool, Default: false},
+		{Name: "used_at", Type: field.TypeTime, Nullable: true},
+		{Name: "ip_address", Type: field.TypeString, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+	}
+	// EmailVerificationsTable holds the schema information for the "email_verifications" table.
+	EmailVerificationsTable = &schema.Table{
+		Name:       "email_verifications",
+		Columns:    EmailVerificationsColumns,
+		PrimaryKey: []*schema.Column{EmailVerificationsColumns[0]},
+	}
+	// PasswordResetsColumns holds the columns for the "password_resets" table.
+	PasswordResetsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "user_id", Type: field.TypeUUID},
+		{Name: "email", Type: field.TypeString},
+		{Name: "token", Type: field.TypeString, Unique: true},
+		{Name: "expires_at", Type: field.TypeTime},
+		{Name: "is_used", Type: field.TypeBool, Default: false},
+		{Name: "used_at", Type: field.TypeTime, Nullable: true},
+		{Name: "ip_address", Type: field.TypeString, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+	}
+	// PasswordResetsTable holds the schema information for the "password_resets" table.
+	PasswordResetsTable = &schema.Table{
+		Name:       "password_resets",
+		Columns:    PasswordResetsColumns,
+		PrimaryKey: []*schema.Column{PasswordResetsColumns[0]},
+	}
 	// PermissionsColumns holds the columns for the "permissions" table.
 	PermissionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "code", Type: field.TypeString, Unique: true},
+		{Name: "name", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "resource", Type: field.TypeString, Nullable: true},
+		{Name: "action", Type: field.TypeString, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
 	}
 	// PermissionsTable holds the schema information for the "permissions" table.
 	PermissionsTable = &schema.Table{
@@ -21,12 +101,51 @@ var (
 		Columns:    PermissionsColumns,
 		PrimaryKey: []*schema.Column{PermissionsColumns[0]},
 	}
+	// RolePermissionsColumns holds the columns for the "role_permissions" table.
+	RolePermissionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "assigned_at", Type: field.TypeTime},
+		{Name: "role_id", Type: field.TypeInt},
+		{Name: "permission_id", Type: field.TypeInt},
+	}
+	// RolePermissionsTable holds the schema information for the "role_permissions" table.
+	RolePermissionsTable = &schema.Table{
+		Name:       "role_permissions",
+		Columns:    RolePermissionsColumns,
+		PrimaryKey: []*schema.Column{RolePermissionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "role_permissions_roles_role",
+				Columns:    []*schema.Column{RolePermissionsColumns[2]},
+				RefColumns: []*schema.Column{RolesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "role_permissions_permissions_permission",
+				Columns:    []*schema.Column{RolePermissionsColumns[3]},
+				RefColumns: []*schema.Column{PermissionsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "rolepermissions_role_id_permission_id",
+				Unique:  true,
+				Columns: []*schema.Column{RolePermissionsColumns[2], RolePermissionsColumns[3]},
+			},
+		},
+	}
 	// RolesColumns holds the columns for the "roles" table.
 	RolesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "code", Type: field.TypeString, Unique: true},
+		{Name: "name", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "is_system", Type: field.TypeBool, Default: false},
+		{Name: "is_default", Type: field.TypeBool, Default: false},
+		{Name: "max_users", Type: field.TypeInt, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
 	}
 	// RolesTable holds the schema information for the "roles" table.
 	RolesTable = &schema.Table{
@@ -34,15 +153,52 @@ var (
 		Columns:    RolesColumns,
 		PrimaryKey: []*schema.Column{RolesColumns[0]},
 	}
+	// UserRolesColumns holds the columns for the "user_roles" table.
+	UserRolesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "assigned_by", Type: field.TypeUUID, Nullable: true},
+		{Name: "assigned_at", Type: field.TypeTime},
+		{Name: "user_id", Type: field.TypeUUID},
+		{Name: "role_id", Type: field.TypeInt},
+	}
+	// UserRolesTable holds the schema information for the "user_roles" table.
+	UserRolesTable = &schema.Table{
+		Name:       "user_roles",
+		Columns:    UserRolesColumns,
+		PrimaryKey: []*schema.Column{UserRolesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "user_roles_users_user",
+				Columns:    []*schema.Column{UserRolesColumns[3]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "user_roles_roles_role",
+				Columns:    []*schema.Column{UserRolesColumns[4]},
+				RefColumns: []*schema.Column{RolesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "userroles_user_id_role_id",
+				Unique:  true,
+				Columns: []*schema.Column{UserRolesColumns[3], UserRolesColumns[4]},
+			},
+		},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
 		{Name: "email", Type: field.TypeString, Unique: true},
 		{Name: "password_hash", Type: field.TypeString},
+		{Name: "first_name", Type: field.TypeString},
+		{Name: "last_name", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "last_login", Type: field.TypeTime, Nullable: true},
-		{Name: "is_active", Type: field.TypeBool, Default: false},
+		{Name: "is_active", Type: field.TypeBool, Default: true},
 		{Name: "email_verified", Type: field.TypeBool, Default: false},
 		{Name: "verification_token", Type: field.TypeString, Nullable: true},
 		{Name: "verification_token_expiry", Type: field.TypeTime, Nullable: true},
@@ -56,69 +212,23 @@ var (
 		Columns:    UsersColumns,
 		PrimaryKey: []*schema.Column{UsersColumns[0]},
 	}
-	// RolesPermissionsColumns holds the columns for the "roles_permissions" table.
-	RolesPermissionsColumns = []*schema.Column{
-		{Name: "roles_id", Type: field.TypeInt},
-		{Name: "permissions_id", Type: field.TypeInt},
-	}
-	// RolesPermissionsTable holds the schema information for the "roles_permissions" table.
-	RolesPermissionsTable = &schema.Table{
-		Name:       "roles_permissions",
-		Columns:    RolesPermissionsColumns,
-		PrimaryKey: []*schema.Column{RolesPermissionsColumns[0], RolesPermissionsColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "roles_permissions_roles_id",
-				Columns:    []*schema.Column{RolesPermissionsColumns[0]},
-				RefColumns: []*schema.Column{RolesColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "roles_permissions_permissions_id",
-				Columns:    []*schema.Column{RolesPermissionsColumns[1]},
-				RefColumns: []*schema.Column{PermissionsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
-	}
-	// UsersRolesColumns holds the columns for the "users_roles" table.
-	UsersRolesColumns = []*schema.Column{
-		{Name: "users_id", Type: field.TypeUUID},
-		{Name: "roles_id", Type: field.TypeInt},
-	}
-	// UsersRolesTable holds the schema information for the "users_roles" table.
-	UsersRolesTable = &schema.Table{
-		Name:       "users_roles",
-		Columns:    UsersRolesColumns,
-		PrimaryKey: []*schema.Column{UsersRolesColumns[0], UsersRolesColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "users_roles_users_id",
-				Columns:    []*schema.Column{UsersRolesColumns[0]},
-				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "users_roles_roles_id",
-				Columns:    []*schema.Column{UsersRolesColumns[1]},
-				RefColumns: []*schema.Column{RolesColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
-	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		AuditLogsTable,
+		EmailLogsTable,
+		EmailVerificationsTable,
+		PasswordResetsTable,
 		PermissionsTable,
+		RolePermissionsTable,
 		RolesTable,
+		UserRolesTable,
 		UsersTable,
-		RolesPermissionsTable,
-		UsersRolesTable,
 	}
 )
 
 func init() {
-	RolesPermissionsTable.ForeignKeys[0].RefTable = RolesTable
-	RolesPermissionsTable.ForeignKeys[1].RefTable = PermissionsTable
-	UsersRolesTable.ForeignKeys[0].RefTable = UsersTable
-	UsersRolesTable.ForeignKeys[1].RefTable = RolesTable
+	RolePermissionsTable.ForeignKeys[0].RefTable = RolesTable
+	RolePermissionsTable.ForeignKeys[1].RefTable = PermissionsTable
+	UserRolesTable.ForeignKeys[0].RefTable = UsersTable
+	UserRolesTable.ForeignKeys[1].RefTable = RolesTable
 }

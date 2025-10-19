@@ -336,3 +336,18 @@ func getKeys(cache *redis.Client) (map[string]*Key, error) {
 
 	return keys, nil
 }
+
+// GetPublicKeyFromCache retrieves a public key by kid from cache
+func GetPublicKeyFromCache(cache *redis.Client, kid string) (*rsa.PublicKey, error) {
+	keys, err := getKeys(cache)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get keys: %v", err)
+	}
+
+	key, found := keys[kid]
+	if !found {
+		return nil, fmt.Errorf("key %s not found", kid)
+	}
+
+	return key.PublicKey, nil
+}

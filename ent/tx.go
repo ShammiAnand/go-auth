@@ -12,10 +12,22 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// AuditLogs is the client for interacting with the AuditLogs builders.
+	AuditLogs *AuditLogsClient
+	// EmailLogs is the client for interacting with the EmailLogs builders.
+	EmailLogs *EmailLogsClient
+	// EmailVerifications is the client for interacting with the EmailVerifications builders.
+	EmailVerifications *EmailVerificationsClient
+	// PasswordResets is the client for interacting with the PasswordResets builders.
+	PasswordResets *PasswordResetsClient
 	// Permissions is the client for interacting with the Permissions builders.
 	Permissions *PermissionsClient
+	// RolePermissions is the client for interacting with the RolePermissions builders.
+	RolePermissions *RolePermissionsClient
 	// Roles is the client for interacting with the Roles builders.
 	Roles *RolesClient
+	// UserRoles is the client for interacting with the UserRoles builders.
+	UserRoles *UserRolesClient
 	// Users is the client for interacting with the Users builders.
 	Users *UsersClient
 
@@ -149,8 +161,14 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.AuditLogs = NewAuditLogsClient(tx.config)
+	tx.EmailLogs = NewEmailLogsClient(tx.config)
+	tx.EmailVerifications = NewEmailVerificationsClient(tx.config)
+	tx.PasswordResets = NewPasswordResetsClient(tx.config)
 	tx.Permissions = NewPermissionsClient(tx.config)
+	tx.RolePermissions = NewRolePermissionsClient(tx.config)
 	tx.Roles = NewRolesClient(tx.config)
+	tx.UserRoles = NewUserRolesClient(tx.config)
 	tx.Users = NewUsersClient(tx.config)
 }
 
@@ -161,7 +179,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: Permissions.QueryXXX(), the query will be executed
+// applies a query, for example: AuditLogs.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

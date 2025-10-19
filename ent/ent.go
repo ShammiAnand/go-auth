@@ -12,8 +12,14 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/shammianand/go-auth/ent/auditlogs"
+	"github.com/shammianand/go-auth/ent/emaillogs"
+	"github.com/shammianand/go-auth/ent/emailverifications"
+	"github.com/shammianand/go-auth/ent/passwordresets"
 	"github.com/shammianand/go-auth/ent/permissions"
+	"github.com/shammianand/go-auth/ent/rolepermissions"
 	"github.com/shammianand/go-auth/ent/roles"
+	"github.com/shammianand/go-auth/ent/userroles"
 	"github.com/shammianand/go-auth/ent/users"
 )
 
@@ -75,9 +81,15 @@ var (
 func checkColumn(table, column string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			permissions.Table: permissions.ValidColumn,
-			roles.Table:       roles.ValidColumn,
-			users.Table:       users.ValidColumn,
+			auditlogs.Table:          auditlogs.ValidColumn,
+			emaillogs.Table:          emaillogs.ValidColumn,
+			emailverifications.Table: emailverifications.ValidColumn,
+			passwordresets.Table:     passwordresets.ValidColumn,
+			permissions.Table:        permissions.ValidColumn,
+			rolepermissions.Table:    rolepermissions.ValidColumn,
+			roles.Table:              roles.ValidColumn,
+			userroles.Table:          userroles.ValidColumn,
+			users.Table:              users.ValidColumn,
 		})
 	})
 	return columnCheck(table, column)

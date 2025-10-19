@@ -1,180 +1,284 @@
-# `go-auth`
+# Go-Auth
 
-![Go Version](https://img.shields.io/badge/Go-1.22-blue.svg)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+> Lightweight authentication microservice with JWKS support for multi-backend architectures
+
+![Go Version](https://img.shields.io/badge/Go-1.24-blue.svg)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
+## Table of Contents
 
-1. [Architecture Overview](#architecture-overview)
-2. [API Endpoints](#api-endpoints)
-3. [JWT and JWKS Implementation](#jwt-and-jwks-implementation)
-4. [Database Design](#database-design)
-5. [Email Integration](#email-integration)
-6. [RBAC Considerations](#rbac-considerations)
+1. [Overview](#overview)
+2. [Features](#features)
+3. [Quick Start](#quick-start)
+4. [Architecture](#architecture)
+5. [API Documentation](#api-documentation)
+6. [CLI Commands](#cli-commands)
+7. [Configuration](#configuration)
+8. [Development](#development)
+9. [Deployment](#deployment)
+10. [Documentation](#documentation)
+11. [License](#license)
 
-## Architecture Overview
+## Overview
 
-The authentication service is designed as a RESTful API using Go. It implements JWT-based authentication with JWKS for public key distribution. The service uses a hybrid database approach with PostgreSQL as the primary database and Redis for caching and high-performance operations.
+Go-Auth is a production-ready authentication microservice built with Go, designed to provide centralized authentication for microservice architectures. It implements JWT-based authentication with JWKS (JSON Web Key Set) for secure public key distribution, enabling multiple backend services to verify tokens without shared secrets.
 
-## API Endpoints
+## Features
 
-### 1. `POST /auth/signup`
+- **JWT Authentication** - RS256 signed tokens with JWKS support
+- **User Management** - Signup, signin, email verification, password reset
+- **RBAC System** - Role-Based Access Control with flexible permissions
+- **Email Integration** - Mailhog for development, SES-ready for production
+- **CLI Interface** - Cobra-based CLI for all operations
+- **Health Checks** - `/health` and `/ready` endpoints
+- **Docker Support** - Multi-stage builds, docker-compose setup
+- **Audit Logging** - Track all RBAC changes
+- **Redis Caching** - Session management and JWKS caching
+- **PostgreSQL** - Robust data persistence with ent ORM
 
-### 2. `POST /auth/login`
+## Quick Start
 
-### 3. `POST /auth/logout`
+### Prerequisites
 
-### 4. `GET /auth/token/refresh`
+- Go 1.24+
+- Docker & Docker Compose
+- Make
 
-### 5. `POST /auth/password/reset-request`
+### 1. Clone and Setup
 
-### 6. `POST /auth/password/reset`
-
-### 7. `GET /auth/verify-email`
-
-### 8. `POST /auth/resend-verification`
-
-### 9. `GET /auth/me`
-
-### 10. `PUT /auth/update-profile`
-
-### 11. `GET /auth/.well-known/jwks.json`
-
----
-
-## JWT and JWKS Implementation
-
-### Signing Method
-
-- Use RS256 (RSA Signature with SHA-256)
-
-### JWT Structure
-
-- Includes standard claims: `iss`, `sub`, `exp`, `iat`
-- custom claims can be added in future: `roles`, `permissions`
-
-### Token Lifetime
-
-- Access tokens: 15-30 minutes
-- Refresh tokens: Longer lived (e.g., 7 days)
-
-### JWKS Implementation
-
-- Rotate keys periodically (e.g., every 24 hours)
-- Keep old keys valid for a grace period
-- caching mechanism for JWKS
-
-## Database Design
-
-### Primary Database: PostgreSQL
-
-### Secondary Database: Redis
-
-#### Users Table
-
-```sql
-CREATE TABLE users (
-  id UUID PRIMARY KEY,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  last_login TIMESTAMP WITH TIME ZONE,
-  is_active BOOLEAN DEFAULT true,
-  email_verified BOOLEAN DEFAULT false,
-  verification_token VARCHAR(255),
-  verification_token_expiry TIMESTAMP WITH TIME ZONE,
-  password_reset_token VARCHAR(255),
-  password_reset_token_expiry TIMESTAMP WITH TIME ZONE,
-  metadata JSONB
-);
+```bash
+git clone <repository-url>
+cd go-auth
+cp .env.sample .env
 ```
 
-#### Roles Table
+### 2. Start Dependencies
 
-```sql
-CREATE TABLE roles (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR(50) UNIQUE NOT NULL,
-  description TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
+```bash
+make dev
 ```
 
-#### Permissions Table
+This starts PostgreSQL, Redis, and Mailhog.
 
-```sql
-CREATE TABLE permissions (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR(50) UNIQUE NOT NULL,
-  description TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
+### 3. Initialize RBAC
+
+```bash
+make init
 ```
 
-- relationships between user, roles and permission is maintained through edges
-- ent.io is used as an ORM for this
+This creates default roles (super-admin, admin, user) and permissions.
 
----
+### 4. Create Super Admin
 
-## Email Integration (TODO)
-
-### Email Service Interface
-
-```go
-type EmailService interface {
-    SendVerificationEmail(to string, verificationLink string) error
-    SendPasswordResetEmail(to string, resetLink string) error
-    SendWelcomeEmail(to string, username string) error
-}
+```bash
+make create-superuser
 ```
 
-### Email Provider Interface
+### 5. Start API Server
 
-```go
-type EmailProvider interface {
-    Send(email Email) error
-}
-
-type Email struct {
-    To      string
-    From    string
-    Subject string
-    Body    string
-}
+```bash
+make run
 ```
 
-### Implementation Example (SendGrid)
+Server runs on `http://localhost:42069`
 
-```go
-type sendGridProvider struct {
-    client *sendgrid.Client
-}
+### 6. Test the API
 
-func (s *sendGridProvider) Send(email Email) error {
-    message := sendgrid.NewSingleEmail(
-        sendgrid.NewEmail(email.From, email.From),
-        email.Subject,
-        sendgrid.NewEmail(email.To, email.To),
-        email.Body,
-        email.Body,
-    )
-    _, err := s.client.Send(message)
-    return err
-}
+```bash
+# Signup
+curl -X POST http://localhost:42069/api/v1/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "SecurePass123!",
+    "first_name": "John",
+    "last_name": "Doe"
+  }'
+
+# Signin
+curl -X POST http://localhost:42069/api/v1/auth/signin \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "SecurePass123!"
+  }'
 ```
 
-### Email Flows
+## Architecture
 
-1. Signup Verification
-2. Password Reset
+```
+┌─────────────┐     ┌──────────────┐     ┌──────────────┐
+│   Client    │────▶│   Go-Auth    │────▶│  PostgreSQL  │
+│ (micro-svc) │     │  (API Server)│     │   (Users/    │
+│             │◀────│              │◀────│    RBAC)     │
+└─────────────┘     └──────────────┘     └──────────────┘
+                           │
+                           ├──────────────┐
+                           │              │
+                    ┌──────▼─────┐ ┌─────▼─────┐
+                    │   Redis    │ │  Mailhog  │
+                    │  (Cache/   │ │  (Emails) │
+                    │  Sessions) │ │           │
+                    └────────────┘ └───────────┘
+```
 
-Implement these flows in the respective API endpoints, generating tokens and sending emails as needed.
+### Components
 
-## RBAC Considerations
+- **Gin Framework** - High-performance HTTP router
+- **Ent ORM** - Type-safe database queries
+- **Cobra CLI** - Command-line interface
+- **Redis** - Session storage, JWKS caching, rate limiting
+- **PostgreSQL** - Primary data store
+- **Mailhog** - Email testing (development)
 
-While not initially implemented, design the system to easily incorporate RBAC later:
+## API Documentation
 
-1. Use the roles and permissions tables defined in the database schema
-2. Implement middleware to check roles/permissions from JWT claims
-3. Design API endpoints for role and permission management (to be implemented later)
+### Authentication Endpoints
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/api/v1/auth/signup` | Create new account | No |
+| POST | `/api/v1/auth/signin` | Authenticate user | No |
+| POST | `/api/v1/auth/logout` | Invalidate session | Yes |
+| GET | `/api/v1/auth/me` | Get user info | Yes |
+| PUT | `/api/v1/auth/me` | Update profile | Yes |
+| POST | `/api/v1/auth/forgot-password` | Request reset | No |
+| POST | `/api/v1/auth/reset-password` | Complete reset | No |
+| GET | `/api/v1/auth/verify-email` | Verify email | No |
+| POST | `/api/v1/auth/resend-verification` | Resend email | No |
+| GET | `/api/v1/.well-known/jwks.json` | Public keys | No |
+
+### Health Check Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Basic health check |
+| GET | `/ready` | Readiness check (DB connectivity) |
+
+## CLI Commands
+
+```bash
+# Server
+go-auth server [--port PORT]             # Start HTTP server
+
+# RBAC Initialization
+go-auth init [--config PATH]             # Bootstrap roles/permissions
+
+# Admin
+go-auth admin create-superuser \         # Create super-admin
+  --email EMAIL \
+  --password PASSWORD \
+  --first-name FIRST \
+  --last-name LAST
+
+# Jobs
+go-auth jobs jwks-refresh \              # JWKS key rotation job
+  --interval DURATION
+```
+
+## Configuration
+
+### Environment Variables
+
+Create `.env` file:
+
+```bash
+# Database
+DB_URL=localhost
+DB_PORT=5432
+DB_USER=admin
+DB_PASS=admin
+DB_NAME=auth
+
+# Redis
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+
+# JWT
+SECRET_KEY_ID=your-secret-id
+SECRET_PRIVATE_KEY=your-private-key
+
+# API
+API_PORT=42069
+```
+
+### RBAC Configuration
+
+Edit `configs/rbac-config.yaml` to customize roles and permissions:
+
+```yaml
+permissions:
+  - code: "users.read"
+    name: "View Users"
+    resource: "users"
+    action: "read"
+
+roles:
+  - code: "admin"
+    name: "Administrator"
+    is_system: true
+    permissions:
+      - "users.*"
+      - "rbac.*"
+```
+
+## Development
+
+### Makefile Commands
+
+```bash
+make help              # Show all commands
+make build             # Build binary
+make run               # Build and run server
+make init              # Initialize RBAC
+make create-superuser  # Create admin user
+make test              # Run tests
+make gen-ent           # Generate Ent code
+make clean             # Remove build artifacts
+make dev               # Start dev environment
+```
+
+### Project Structure
+
+```
+go-auth/
+├── cmd/              # CLI commands (Cobra)
+├── configs/          # Configuration files
+├── ent/              # Ent schema & generated code
+├── internal/
+│   ├── auth/         # JWT & password utilities
+│   ├── common/       # Shared types & middleware
+│   ├── config/       # Config loading
+│   ├── modules/      # Feature modules
+│   │   ├── auth/     # Authentication
+│   │   ├── email/    # Email service
+│   │   └── rbac/     # RBAC & bootstrap
+│   └── storage/      # DB connections
+├── Dockerfile
+├── docker-compose.yml
+├── Makefile
+└── README.md
+```
+
+## Documentation
+
+For detailed information, see the following documentation:
+
+- **[Architecture Guide](docs/ARCHITECTURE.md)** - Complete system architecture, component breakdown, data flow diagrams, and security considerations
+- **[API Flow Examples](docs/API_FLOWS.md)** - Detailed API request/response examples for all major flows (signup, signin, RBAC, etc.)
+- **[Setup Guide](docs/SETUP.md)** - Prerequisites, installation steps, configuration, CLI usage, and troubleshooting
+
+### Quick Links
+
+- [Database Schema](docs/ARCHITECTURE.md#database-schema)
+- [Authentication Flow](docs/ARCHITECTURE.md#authentication-flow)
+- [RBAC Flow](docs/ARCHITECTURE.md#rbac-flow)
+- [API Endpoints Reference](docs/ARCHITECTURE.md#api-endpoints)
+- [Security Considerations](docs/ARCHITECTURE.md#security-considerations)
+- [Production Deployment](docs/SETUP.md#production-deployment)
+- [Troubleshooting](docs/SETUP.md#troubleshooting)
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details

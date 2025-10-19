@@ -55,6 +55,11 @@ func IDLTE(id int) predicate.Roles {
 	return predicate.Roles(sql.FieldLTE(FieldID, id))
 }
 
+// Code applies equality check predicate on the "code" field. It's identical to CodeEQ.
+func Code(v string) predicate.Roles {
+	return predicate.Roles(sql.FieldEQ(FieldCode, v))
+}
+
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.
 func Name(v string) predicate.Roles {
 	return predicate.Roles(sql.FieldEQ(FieldName, v))
@@ -65,9 +70,94 @@ func Description(v string) predicate.Roles {
 	return predicate.Roles(sql.FieldEQ(FieldDescription, v))
 }
 
+// IsSystem applies equality check predicate on the "is_system" field. It's identical to IsSystemEQ.
+func IsSystem(v bool) predicate.Roles {
+	return predicate.Roles(sql.FieldEQ(FieldIsSystem, v))
+}
+
+// IsDefault applies equality check predicate on the "is_default" field. It's identical to IsDefaultEQ.
+func IsDefault(v bool) predicate.Roles {
+	return predicate.Roles(sql.FieldEQ(FieldIsDefault, v))
+}
+
+// MaxUsers applies equality check predicate on the "max_users" field. It's identical to MaxUsersEQ.
+func MaxUsers(v int) predicate.Roles {
+	return predicate.Roles(sql.FieldEQ(FieldMaxUsers, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.Roles {
 	return predicate.Roles(sql.FieldEQ(FieldCreatedAt, v))
+}
+
+// UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
+func UpdatedAt(v time.Time) predicate.Roles {
+	return predicate.Roles(sql.FieldEQ(FieldUpdatedAt, v))
+}
+
+// CodeEQ applies the EQ predicate on the "code" field.
+func CodeEQ(v string) predicate.Roles {
+	return predicate.Roles(sql.FieldEQ(FieldCode, v))
+}
+
+// CodeNEQ applies the NEQ predicate on the "code" field.
+func CodeNEQ(v string) predicate.Roles {
+	return predicate.Roles(sql.FieldNEQ(FieldCode, v))
+}
+
+// CodeIn applies the In predicate on the "code" field.
+func CodeIn(vs ...string) predicate.Roles {
+	return predicate.Roles(sql.FieldIn(FieldCode, vs...))
+}
+
+// CodeNotIn applies the NotIn predicate on the "code" field.
+func CodeNotIn(vs ...string) predicate.Roles {
+	return predicate.Roles(sql.FieldNotIn(FieldCode, vs...))
+}
+
+// CodeGT applies the GT predicate on the "code" field.
+func CodeGT(v string) predicate.Roles {
+	return predicate.Roles(sql.FieldGT(FieldCode, v))
+}
+
+// CodeGTE applies the GTE predicate on the "code" field.
+func CodeGTE(v string) predicate.Roles {
+	return predicate.Roles(sql.FieldGTE(FieldCode, v))
+}
+
+// CodeLT applies the LT predicate on the "code" field.
+func CodeLT(v string) predicate.Roles {
+	return predicate.Roles(sql.FieldLT(FieldCode, v))
+}
+
+// CodeLTE applies the LTE predicate on the "code" field.
+func CodeLTE(v string) predicate.Roles {
+	return predicate.Roles(sql.FieldLTE(FieldCode, v))
+}
+
+// CodeContains applies the Contains predicate on the "code" field.
+func CodeContains(v string) predicate.Roles {
+	return predicate.Roles(sql.FieldContains(FieldCode, v))
+}
+
+// CodeHasPrefix applies the HasPrefix predicate on the "code" field.
+func CodeHasPrefix(v string) predicate.Roles {
+	return predicate.Roles(sql.FieldHasPrefix(FieldCode, v))
+}
+
+// CodeHasSuffix applies the HasSuffix predicate on the "code" field.
+func CodeHasSuffix(v string) predicate.Roles {
+	return predicate.Roles(sql.FieldHasSuffix(FieldCode, v))
+}
+
+// CodeEqualFold applies the EqualFold predicate on the "code" field.
+func CodeEqualFold(v string) predicate.Roles {
+	return predicate.Roles(sql.FieldEqualFold(FieldCode, v))
+}
+
+// CodeContainsFold applies the ContainsFold predicate on the "code" field.
+func CodeContainsFold(v string) predicate.Roles {
+	return predicate.Roles(sql.FieldContainsFold(FieldCode, v))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.
@@ -210,6 +300,76 @@ func DescriptionContainsFold(v string) predicate.Roles {
 	return predicate.Roles(sql.FieldContainsFold(FieldDescription, v))
 }
 
+// IsSystemEQ applies the EQ predicate on the "is_system" field.
+func IsSystemEQ(v bool) predicate.Roles {
+	return predicate.Roles(sql.FieldEQ(FieldIsSystem, v))
+}
+
+// IsSystemNEQ applies the NEQ predicate on the "is_system" field.
+func IsSystemNEQ(v bool) predicate.Roles {
+	return predicate.Roles(sql.FieldNEQ(FieldIsSystem, v))
+}
+
+// IsDefaultEQ applies the EQ predicate on the "is_default" field.
+func IsDefaultEQ(v bool) predicate.Roles {
+	return predicate.Roles(sql.FieldEQ(FieldIsDefault, v))
+}
+
+// IsDefaultNEQ applies the NEQ predicate on the "is_default" field.
+func IsDefaultNEQ(v bool) predicate.Roles {
+	return predicate.Roles(sql.FieldNEQ(FieldIsDefault, v))
+}
+
+// MaxUsersEQ applies the EQ predicate on the "max_users" field.
+func MaxUsersEQ(v int) predicate.Roles {
+	return predicate.Roles(sql.FieldEQ(FieldMaxUsers, v))
+}
+
+// MaxUsersNEQ applies the NEQ predicate on the "max_users" field.
+func MaxUsersNEQ(v int) predicate.Roles {
+	return predicate.Roles(sql.FieldNEQ(FieldMaxUsers, v))
+}
+
+// MaxUsersIn applies the In predicate on the "max_users" field.
+func MaxUsersIn(vs ...int) predicate.Roles {
+	return predicate.Roles(sql.FieldIn(FieldMaxUsers, vs...))
+}
+
+// MaxUsersNotIn applies the NotIn predicate on the "max_users" field.
+func MaxUsersNotIn(vs ...int) predicate.Roles {
+	return predicate.Roles(sql.FieldNotIn(FieldMaxUsers, vs...))
+}
+
+// MaxUsersGT applies the GT predicate on the "max_users" field.
+func MaxUsersGT(v int) predicate.Roles {
+	return predicate.Roles(sql.FieldGT(FieldMaxUsers, v))
+}
+
+// MaxUsersGTE applies the GTE predicate on the "max_users" field.
+func MaxUsersGTE(v int) predicate.Roles {
+	return predicate.Roles(sql.FieldGTE(FieldMaxUsers, v))
+}
+
+// MaxUsersLT applies the LT predicate on the "max_users" field.
+func MaxUsersLT(v int) predicate.Roles {
+	return predicate.Roles(sql.FieldLT(FieldMaxUsers, v))
+}
+
+// MaxUsersLTE applies the LTE predicate on the "max_users" field.
+func MaxUsersLTE(v int) predicate.Roles {
+	return predicate.Roles(sql.FieldLTE(FieldMaxUsers, v))
+}
+
+// MaxUsersIsNil applies the IsNil predicate on the "max_users" field.
+func MaxUsersIsNil() predicate.Roles {
+	return predicate.Roles(sql.FieldIsNull(FieldMaxUsers))
+}
+
+// MaxUsersNotNil applies the NotNil predicate on the "max_users" field.
+func MaxUsersNotNil() predicate.Roles {
+	return predicate.Roles(sql.FieldNotNull(FieldMaxUsers))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Roles {
 	return predicate.Roles(sql.FieldEQ(FieldCreatedAt, v))
@@ -250,21 +410,61 @@ func CreatedAtLTE(v time.Time) predicate.Roles {
 	return predicate.Roles(sql.FieldLTE(FieldCreatedAt, v))
 }
 
-// HasUsers applies the HasEdge predicate on the "users" edge.
-func HasUsers() predicate.Roles {
+// UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
+func UpdatedAtEQ(v time.Time) predicate.Roles {
+	return predicate.Roles(sql.FieldEQ(FieldUpdatedAt, v))
+}
+
+// UpdatedAtNEQ applies the NEQ predicate on the "updated_at" field.
+func UpdatedAtNEQ(v time.Time) predicate.Roles {
+	return predicate.Roles(sql.FieldNEQ(FieldUpdatedAt, v))
+}
+
+// UpdatedAtIn applies the In predicate on the "updated_at" field.
+func UpdatedAtIn(vs ...time.Time) predicate.Roles {
+	return predicate.Roles(sql.FieldIn(FieldUpdatedAt, vs...))
+}
+
+// UpdatedAtNotIn applies the NotIn predicate on the "updated_at" field.
+func UpdatedAtNotIn(vs ...time.Time) predicate.Roles {
+	return predicate.Roles(sql.FieldNotIn(FieldUpdatedAt, vs...))
+}
+
+// UpdatedAtGT applies the GT predicate on the "updated_at" field.
+func UpdatedAtGT(v time.Time) predicate.Roles {
+	return predicate.Roles(sql.FieldGT(FieldUpdatedAt, v))
+}
+
+// UpdatedAtGTE applies the GTE predicate on the "updated_at" field.
+func UpdatedAtGTE(v time.Time) predicate.Roles {
+	return predicate.Roles(sql.FieldGTE(FieldUpdatedAt, v))
+}
+
+// UpdatedAtLT applies the LT predicate on the "updated_at" field.
+func UpdatedAtLT(v time.Time) predicate.Roles {
+	return predicate.Roles(sql.FieldLT(FieldUpdatedAt, v))
+}
+
+// UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
+func UpdatedAtLTE(v time.Time) predicate.Roles {
+	return predicate.Roles(sql.FieldLTE(FieldUpdatedAt, v))
+}
+
+// HasUserRoles applies the HasEdge predicate on the "user_roles" edge.
+func HasUserRoles() predicate.Roles {
 	return predicate.Roles(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, UsersTable, UsersPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, true, UserRolesTable, UserRolesColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasUsersWith applies the HasEdge predicate on the "users" edge with a given conditions (other predicates).
-func HasUsersWith(preds ...predicate.Users) predicate.Roles {
+// HasUserRolesWith applies the HasEdge predicate on the "user_roles" edge with a given conditions (other predicates).
+func HasUserRolesWith(preds ...predicate.UserRoles) predicate.Roles {
 	return predicate.Roles(func(s *sql.Selector) {
-		step := newUsersStep()
+		step := newUserRolesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -273,21 +473,21 @@ func HasUsersWith(preds ...predicate.Users) predicate.Roles {
 	})
 }
 
-// HasPermissions applies the HasEdge predicate on the "permissions" edge.
-func HasPermissions() predicate.Roles {
+// HasRolePermissions applies the HasEdge predicate on the "role_permissions" edge.
+func HasRolePermissions() predicate.Roles {
 	return predicate.Roles(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, PermissionsTable, PermissionsPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, true, RolePermissionsTable, RolePermissionsColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasPermissionsWith applies the HasEdge predicate on the "permissions" edge with a given conditions (other predicates).
-func HasPermissionsWith(preds ...predicate.Permissions) predicate.Roles {
+// HasRolePermissionsWith applies the HasEdge predicate on the "role_permissions" edge with a given conditions (other predicates).
+func HasRolePermissionsWith(preds ...predicate.RolePermissions) predicate.Roles {
 	return predicate.Roles(func(s *sql.Selector) {
-		step := newPermissionsStep()
+		step := newRolePermissionsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

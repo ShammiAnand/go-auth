@@ -23,6 +23,10 @@ type Users struct {
 	Email string `json:"email,omitempty"`
 	// PasswordHash holds the value of the "password_hash" field.
 	PasswordHash string `json:"password_hash,omitempty"`
+	// FirstName holds the value of the "first_name" field.
+	FirstName string `json:"first_name,omitempty"`
+	// LastName holds the value of the "last_name" field.
+	LastName string `json:"last_name,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
@@ -51,20 +55,20 @@ type Users struct {
 
 // UsersEdges holds the relations/edges for other nodes in the graph.
 type UsersEdges struct {
-	// Roles holds the value of the roles edge.
-	Roles []*Roles `json:"roles,omitempty"`
+	// UserRoles holds the value of the user_roles edge.
+	UserRoles []*UserRoles `json:"user_roles,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool
 }
 
-// RolesOrErr returns the Roles value or an error if the edge
+// UserRolesOrErr returns the UserRoles value or an error if the edge
 // was not loaded in eager-loading.
-func (e UsersEdges) RolesOrErr() ([]*Roles, error) {
+func (e UsersEdges) UserRolesOrErr() ([]*UserRoles, error) {
 	if e.loadedTypes[0] {
-		return e.Roles, nil
+		return e.UserRoles, nil
 	}
-	return nil, &NotLoadedError{edge: "roles"}
+	return nil, &NotLoadedError{edge: "user_roles"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -76,7 +80,7 @@ func (*Users) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case users.FieldIsActive, users.FieldEmailVerified:
 			values[i] = new(sql.NullBool)
-		case users.FieldEmail, users.FieldPasswordHash, users.FieldVerificationToken, users.FieldPasswordResetToken:
+		case users.FieldEmail, users.FieldPasswordHash, users.FieldFirstName, users.FieldLastName, users.FieldVerificationToken, users.FieldPasswordResetToken:
 			values[i] = new(sql.NullString)
 		case users.FieldCreatedAt, users.FieldUpdatedAt, users.FieldLastLogin, users.FieldVerificationTokenExpiry, users.FieldPasswordResetTokenExpiry:
 			values[i] = new(sql.NullTime)
@@ -114,6 +118,18 @@ func (u *Users) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field password_hash", values[i])
 			} else if value.Valid {
 				u.PasswordHash = value.String
+			}
+		case users.FieldFirstName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field first_name", values[i])
+			} else if value.Valid {
+				u.FirstName = value.String
+			}
+		case users.FieldLastName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field last_name", values[i])
+			} else if value.Valid {
+				u.LastName = value.String
 			}
 		case users.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -194,9 +210,9 @@ func (u *Users) Value(name string) (ent.Value, error) {
 	return u.selectValues.Get(name)
 }
 
-// QueryRoles queries the "roles" edge of the Users entity.
-func (u *Users) QueryRoles() *RolesQuery {
-	return NewUsersClient(u.config).QueryRoles(u)
+// QueryUserRoles queries the "user_roles" edge of the Users entity.
+func (u *Users) QueryUserRoles() *UserRolesQuery {
+	return NewUsersClient(u.config).QueryUserRoles(u)
 }
 
 // Update returns a builder for updating this Users.
@@ -227,6 +243,12 @@ func (u *Users) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("password_hash=")
 	builder.WriteString(u.PasswordHash)
+	builder.WriteString(", ")
+	builder.WriteString("first_name=")
+	builder.WriteString(u.FirstName)
+	builder.WriteString(", ")
+	builder.WriteString("last_name=")
+	builder.WriteString(u.LastName)
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(u.CreatedAt.Format(time.ANSIC))

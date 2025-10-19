@@ -13,17 +13,17 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/shammianand/go-auth/ent/permissions"
 	"github.com/shammianand/go-auth/ent/predicate"
-	"github.com/shammianand/go-auth/ent/roles"
+	"github.com/shammianand/go-auth/ent/rolepermissions"
 )
 
 // PermissionsQuery is the builder for querying Permissions entities.
 type PermissionsQuery struct {
 	config
-	ctx        *QueryContext
-	order      []permissions.OrderOption
-	inters     []Interceptor
-	predicates []predicate.Permissions
-	withRoles  *RolesQuery
+	ctx                 *QueryContext
+	order               []permissions.OrderOption
+	inters              []Interceptor
+	predicates          []predicate.Permissions
+	withRolePermissions *RolePermissionsQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -60,9 +60,9 @@ func (pq *PermissionsQuery) Order(o ...permissions.OrderOption) *PermissionsQuer
 	return pq
 }
 
-// QueryRoles chains the current query on the "roles" edge.
-func (pq *PermissionsQuery) QueryRoles() *RolesQuery {
-	query := (&RolesClient{config: pq.config}).Query()
+// QueryRolePermissions chains the current query on the "role_permissions" edge.
+func (pq *PermissionsQuery) QueryRolePermissions() *RolePermissionsQuery {
+	query := (&RolePermissionsClient{config: pq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := pq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -73,8 +73,8 @@ func (pq *PermissionsQuery) QueryRoles() *RolesQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(permissions.Table, permissions.FieldID, selector),
-			sqlgraph.To(roles.Table, roles.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, permissions.RolesTable, permissions.RolesPrimaryKey...),
+			sqlgraph.To(rolepermissions.Table, rolepermissions.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, permissions.RolePermissionsTable, permissions.RolePermissionsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -269,26 +269,26 @@ func (pq *PermissionsQuery) Clone() *PermissionsQuery {
 		return nil
 	}
 	return &PermissionsQuery{
-		config:     pq.config,
-		ctx:        pq.ctx.Clone(),
-		order:      append([]permissions.OrderOption{}, pq.order...),
-		inters:     append([]Interceptor{}, pq.inters...),
-		predicates: append([]predicate.Permissions{}, pq.predicates...),
-		withRoles:  pq.withRoles.Clone(),
+		config:              pq.config,
+		ctx:                 pq.ctx.Clone(),
+		order:               append([]permissions.OrderOption{}, pq.order...),
+		inters:              append([]Interceptor{}, pq.inters...),
+		predicates:          append([]predicate.Permissions{}, pq.predicates...),
+		withRolePermissions: pq.withRolePermissions.Clone(),
 		// clone intermediate query.
 		sql:  pq.sql.Clone(),
 		path: pq.path,
 	}
 }
 
-// WithRoles tells the query-builder to eager-load the nodes that are connected to
-// the "roles" edge. The optional arguments are used to configure the query builder of the edge.
-func (pq *PermissionsQuery) WithRoles(opts ...func(*RolesQuery)) *PermissionsQuery {
-	query := (&RolesClient{config: pq.config}).Query()
+// WithRolePermissions tells the query-builder to eager-load the nodes that are connected to
+// the "role_permissions" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PermissionsQuery) WithRolePermissions(opts ...func(*RolePermissionsQuery)) *PermissionsQuery {
+	query := (&RolePermissionsClient{config: pq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	pq.withRoles = query
+	pq.withRolePermissions = query
 	return pq
 }
 
@@ -298,12 +298,12 @@ func (pq *PermissionsQuery) WithRoles(opts ...func(*RolesQuery)) *PermissionsQue
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Code string `json:"code,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Permissions.Query().
-//		GroupBy(permissions.FieldName).
+//		GroupBy(permissions.FieldCode).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (pq *PermissionsQuery) GroupBy(field string, fields ...string) *PermissionsGroupBy {
@@ -321,11 +321,11 @@ func (pq *PermissionsQuery) GroupBy(field string, fields ...string) *Permissions
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Code string `json:"code,omitempty"`
 //	}
 //
 //	client.Permissions.Query().
-//		Select(permissions.FieldName).
+//		Select(permissions.FieldCode).
 //		Scan(ctx, &v)
 func (pq *PermissionsQuery) Select(fields ...string) *PermissionsSelect {
 	pq.ctx.Fields = append(pq.ctx.Fields, fields...)
@@ -371,7 +371,7 @@ func (pq *PermissionsQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 		nodes       = []*Permissions{}
 		_spec       = pq.querySpec()
 		loadedTypes = [1]bool{
-			pq.withRoles != nil,
+			pq.withRolePermissions != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -392,74 +392,43 @@ func (pq *PermissionsQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := pq.withRoles; query != nil {
-		if err := pq.loadRoles(ctx, query, nodes,
-			func(n *Permissions) { n.Edges.Roles = []*Roles{} },
-			func(n *Permissions, e *Roles) { n.Edges.Roles = append(n.Edges.Roles, e) }); err != nil {
+	if query := pq.withRolePermissions; query != nil {
+		if err := pq.loadRolePermissions(ctx, query, nodes,
+			func(n *Permissions) { n.Edges.RolePermissions = []*RolePermissions{} },
+			func(n *Permissions, e *RolePermissions) { n.Edges.RolePermissions = append(n.Edges.RolePermissions, e) }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (pq *PermissionsQuery) loadRoles(ctx context.Context, query *RolesQuery, nodes []*Permissions, init func(*Permissions), assign func(*Permissions, *Roles)) error {
-	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[int]*Permissions)
-	nids := make(map[int]map[*Permissions]struct{})
-	for i, node := range nodes {
-		edgeIDs[i] = node.ID
-		byID[node.ID] = node
+func (pq *PermissionsQuery) loadRolePermissions(ctx context.Context, query *RolePermissionsQuery, nodes []*Permissions, init func(*Permissions), assign func(*Permissions, *RolePermissions)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Permissions)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
 		if init != nil {
-			init(node)
+			init(nodes[i])
 		}
 	}
-	query.Where(func(s *sql.Selector) {
-		joinT := sql.Table(permissions.RolesTable)
-		s.Join(joinT).On(s.C(roles.FieldID), joinT.C(permissions.RolesPrimaryKey[0]))
-		s.Where(sql.InValues(joinT.C(permissions.RolesPrimaryKey[1]), edgeIDs...))
-		columns := s.SelectedColumns()
-		s.Select(joinT.C(permissions.RolesPrimaryKey[1]))
-		s.AppendSelect(columns...)
-		s.SetDistinct(false)
-	})
-	if err := query.prepareQuery(ctx); err != nil {
-		return err
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(rolepermissions.FieldPermissionID)
 	}
-	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
-		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
-			assign := spec.Assign
-			values := spec.ScanValues
-			spec.ScanValues = func(columns []string) ([]any, error) {
-				values, err := values(columns[1:])
-				if err != nil {
-					return nil, err
-				}
-				return append([]any{new(sql.NullInt64)}, values...), nil
-			}
-			spec.Assign = func(columns []string, values []any) error {
-				outValue := int(values[0].(*sql.NullInt64).Int64)
-				inValue := int(values[1].(*sql.NullInt64).Int64)
-				if nids[inValue] == nil {
-					nids[inValue] = map[*Permissions]struct{}{byID[outValue]: {}}
-					return assign(columns[1:], values[1:])
-				}
-				nids[inValue][byID[outValue]] = struct{}{}
-				return nil
-			}
-		})
-	})
-	neighbors, err := withInterceptors[[]*Roles](ctx, query, qr, query.inters)
+	query.Where(predicate.RolePermissions(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(permissions.RolePermissionsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nids[n.ID]
+		fk := n.PermissionID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected "roles" node returned %v`, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "permission_id" returned %v for node %v`, fk, n.ID)
 		}
-		for kn := range nodes {
-			assign(kn, n)
-		}
+		assign(node, n)
 	}
 	return nil
 }

@@ -22,13 +22,16 @@ func (Users) Fields() []ent.Field {
 			Default(uuid.New),
 		field.String("email").NotEmpty().Unique(),
 		field.String("password_hash").NotEmpty(),
+		field.String("first_name").NotEmpty(),
+		field.String("last_name").NotEmpty(),
 		field.Time("created_at").
 			Default(time.Now),
 		field.Time("updated_at").
-			Default(time.Now),
+			Default(time.Now).
+			UpdateDefault(time.Now),
 		field.Time("last_login").Optional(),
 		field.Bool("is_active").
-			Default(false),
+			Default(true),
 		field.Bool("email_verified").
 			Default(false),
 
@@ -55,6 +58,7 @@ func (Users) Fields() []ent.Field {
 // Edges of the Users.
 func (Users) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("roles", Roles.Type),
+		edge.From("user_roles", UserRoles.Type).
+			Ref("user"),
 	}
 }

@@ -3,6 +3,7 @@ version: "3.8"
 services:
   db:
     image: postgres:13-alpine
+    container_name: go-auth-postgres
     environment:
       POSTGRES_DB: auth
       POSTGRES_USER: admin
@@ -21,11 +22,26 @@ services:
 
   cache:
     image: redis:6.2-alpine
+    container_name: go-auth-redis
     restart: always
     ports:
       - "6379:6379"
     volumes:
       - cache:/data
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: go-auth-mailhog
+    ports:
+      - "1025:1025" # SMTP server
+      - "8025:8025" # Web UI
     networks:
       - app_network
 

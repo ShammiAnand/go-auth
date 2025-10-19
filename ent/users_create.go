@@ -11,7 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
-	"github.com/shammianand/go-auth/ent/roles"
+	"github.com/shammianand/go-auth/ent/userroles"
 	"github.com/shammianand/go-auth/ent/users"
 )
 
@@ -31,6 +31,18 @@ func (uc *UsersCreate) SetEmail(s string) *UsersCreate {
 // SetPasswordHash sets the "password_hash" field.
 func (uc *UsersCreate) SetPasswordHash(s string) *UsersCreate {
 	uc.mutation.SetPasswordHash(s)
+	return uc
+}
+
+// SetFirstName sets the "first_name" field.
+func (uc *UsersCreate) SetFirstName(s string) *UsersCreate {
+	uc.mutation.SetFirstName(s)
+	return uc
+}
+
+// SetLastName sets the "last_name" field.
+func (uc *UsersCreate) SetLastName(s string) *UsersCreate {
+	uc.mutation.SetLastName(s)
 	return uc
 }
 
@@ -180,19 +192,19 @@ func (uc *UsersCreate) SetNillableID(u *uuid.UUID) *UsersCreate {
 	return uc
 }
 
-// AddRoleIDs adds the "roles" edge to the Roles entity by IDs.
-func (uc *UsersCreate) AddRoleIDs(ids ...int) *UsersCreate {
-	uc.mutation.AddRoleIDs(ids...)
+// AddUserRoleIDs adds the "user_roles" edge to the UserRoles entity by IDs.
+func (uc *UsersCreate) AddUserRoleIDs(ids ...uuid.UUID) *UsersCreate {
+	uc.mutation.AddUserRoleIDs(ids...)
 	return uc
 }
 
-// AddRoles adds the "roles" edges to the Roles entity.
-func (uc *UsersCreate) AddRoles(r ...*Roles) *UsersCreate {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+// AddUserRoles adds the "user_roles" edges to the UserRoles entity.
+func (uc *UsersCreate) AddUserRoles(u ...*UserRoles) *UsersCreate {
+	ids := make([]uuid.UUID, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
 	}
-	return uc.AddRoleIDs(ids...)
+	return uc.AddUserRoleIDs(ids...)
 }
 
 // Mutation returns the UsersMutation object of the builder.
@@ -270,6 +282,22 @@ func (uc *UsersCreate) check() error {
 			return &ValidationError{Name: "password_hash", err: fmt.Errorf(`ent: validator failed for field "Users.password_hash": %w`, err)}
 		}
 	}
+	if _, ok := uc.mutation.FirstName(); !ok {
+		return &ValidationError{Name: "first_name", err: errors.New(`ent: missing required field "Users.first_name"`)}
+	}
+	if v, ok := uc.mutation.FirstName(); ok {
+		if err := users.FirstNameValidator(v); err != nil {
+			return &ValidationError{Name: "first_name", err: fmt.Errorf(`ent: validator failed for field "Users.first_name": %w`, err)}
+		}
+	}
+	if _, ok := uc.mutation.LastName(); !ok {
+		return &ValidationError{Name: "last_name", err: errors.New(`ent: missing required field "Users.last_name"`)}
+	}
+	if v, ok := uc.mutation.LastName(); ok {
+		if err := users.LastNameValidator(v); err != nil {
+			return &ValidationError{Name: "last_name", err: fmt.Errorf(`ent: validator failed for field "Users.last_name": %w`, err)}
+		}
+	}
 	if _, ok := uc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Users.created_at"`)}
 	}
@@ -325,6 +353,14 @@ func (uc *UsersCreate) createSpec() (*Users, *sqlgraph.CreateSpec) {
 		_spec.SetField(users.FieldPasswordHash, field.TypeString, value)
 		_node.PasswordHash = value
 	}
+	if value, ok := uc.mutation.FirstName(); ok {
+		_spec.SetField(users.FieldFirstName, field.TypeString, value)
+		_node.FirstName = value
+	}
+	if value, ok := uc.mutation.LastName(); ok {
+		_spec.SetField(users.FieldLastName, field.TypeString, value)
+		_node.LastName = value
+	}
 	if value, ok := uc.mutation.CreatedAt(); ok {
 		_spec.SetField(users.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
@@ -365,15 +401,15 @@ func (uc *UsersCreate) createSpec() (*Users, *sqlgraph.CreateSpec) {
 		_spec.SetField(users.FieldMetadata, field.TypeJSON, value)
 		_node.Metadata = value
 	}
-	if nodes := uc.mutation.RolesIDs(); len(nodes) > 0 {
+	if nodes := uc.mutation.UserRolesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   users.RolesTable,
-			Columns: users.RolesPrimaryKey,
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   users.UserRolesTable,
+			Columns: []string{users.UserRolesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(roles.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(userroles.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

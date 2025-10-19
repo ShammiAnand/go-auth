@@ -17,12 +17,22 @@ type Roles struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// Unique code identifier for the role
+	Code string `json:"code,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
+	// System roles cannot be deleted or modified via API
+	IsSystem bool `json:"is_system,omitempty"`
+	// Default role assigned to new users on signup
+	IsDefault bool `json:"is_default,omitempty"`
+	// Maximum users allowed for this role (null = unlimited)
+	MaxUsers *int `json:"max_users,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RolesQuery when eager-loading is set.
 	Edges        RolesEdges `json:"edges"`
@@ -31,31 +41,31 @@ type Roles struct {
 
 // RolesEdges holds the relations/edges for other nodes in the graph.
 type RolesEdges struct {
-	// Users holds the value of the users edge.
-	Users []*Users `json:"users,omitempty"`
-	// Permissions holds the value of the permissions edge.
-	Permissions []*Permissions `json:"permissions,omitempty"`
+	// UserRoles holds the value of the user_roles edge.
+	UserRoles []*UserRoles `json:"user_roles,omitempty"`
+	// RolePermissions holds the value of the role_permissions edge.
+	RolePermissions []*RolePermissions `json:"role_permissions,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
 }
 
-// UsersOrErr returns the Users value or an error if the edge
+// UserRolesOrErr returns the UserRoles value or an error if the edge
 // was not loaded in eager-loading.
-func (e RolesEdges) UsersOrErr() ([]*Users, error) {
+func (e RolesEdges) UserRolesOrErr() ([]*UserRoles, error) {
 	if e.loadedTypes[0] {
-		return e.Users, nil
+		return e.UserRoles, nil
 	}
-	return nil, &NotLoadedError{edge: "users"}
+	return nil, &NotLoadedError{edge: "user_roles"}
 }
 
-// PermissionsOrErr returns the Permissions value or an error if the edge
+// RolePermissionsOrErr returns the RolePermissions value or an error if the edge
 // was not loaded in eager-loading.
-func (e RolesEdges) PermissionsOrErr() ([]*Permissions, error) {
+func (e RolesEdges) RolePermissionsOrErr() ([]*RolePermissions, error) {
 	if e.loadedTypes[1] {
-		return e.Permissions, nil
+		return e.RolePermissions, nil
 	}
-	return nil, &NotLoadedError{edge: "permissions"}
+	return nil, &NotLoadedError{edge: "role_permissions"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -63,11 +73,13 @@ func (*Roles) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case roles.FieldID:
+		case roles.FieldIsSystem, roles.FieldIsDefault:
+			values[i] = new(sql.NullBool)
+		case roles.FieldID, roles.FieldMaxUsers:
 			values[i] = new(sql.NullInt64)
-		case roles.FieldName, roles.FieldDescription:
+		case roles.FieldCode, roles.FieldName, roles.FieldDescription:
 			values[i] = new(sql.NullString)
-		case roles.FieldCreatedAt:
+		case roles.FieldCreatedAt, roles.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -90,6 +102,12 @@ func (r *Roles) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			r.ID = int(value.Int64)
+		case roles.FieldCode:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field code", values[i])
+			} else if value.Valid {
+				r.Code = value.String
+			}
 		case roles.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
@@ -102,11 +120,36 @@ func (r *Roles) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				r.Description = value.String
 			}
+		case roles.FieldIsSystem:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field is_system", values[i])
+			} else if value.Valid {
+				r.IsSystem = value.Bool
+			}
+		case roles.FieldIsDefault:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field is_default", values[i])
+			} else if value.Valid {
+				r.IsDefault = value.Bool
+			}
+		case roles.FieldMaxUsers:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field max_users", values[i])
+			} else if value.Valid {
+				r.MaxUsers = new(int)
+				*r.MaxUsers = int(value.Int64)
+			}
 		case roles.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
 				r.CreatedAt = value.Time
+			}
+		case roles.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				r.UpdatedAt = value.Time
 			}
 		default:
 			r.selectValues.Set(columns[i], values[i])
@@ -121,14 +164,14 @@ func (r *Roles) Value(name string) (ent.Value, error) {
 	return r.selectValues.Get(name)
 }
 
-// QueryUsers queries the "users" edge of the Roles entity.
-func (r *Roles) QueryUsers() *UsersQuery {
-	return NewRolesClient(r.config).QueryUsers(r)
+// QueryUserRoles queries the "user_roles" edge of the Roles entity.
+func (r *Roles) QueryUserRoles() *UserRolesQuery {
+	return NewRolesClient(r.config).QueryUserRoles(r)
 }
 
-// QueryPermissions queries the "permissions" edge of the Roles entity.
-func (r *Roles) QueryPermissions() *PermissionsQuery {
-	return NewRolesClient(r.config).QueryPermissions(r)
+// QueryRolePermissions queries the "role_permissions" edge of the Roles entity.
+func (r *Roles) QueryRolePermissions() *RolePermissionsQuery {
+	return NewRolesClient(r.config).QueryRolePermissions(r)
 }
 
 // Update returns a builder for updating this Roles.
@@ -154,14 +197,31 @@ func (r *Roles) String() string {
 	var builder strings.Builder
 	builder.WriteString("Roles(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", r.ID))
+	builder.WriteString("code=")
+	builder.WriteString(r.Code)
+	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(r.Name)
 	builder.WriteString(", ")
 	builder.WriteString("description=")
 	builder.WriteString(r.Description)
 	builder.WriteString(", ")
+	builder.WriteString("is_system=")
+	builder.WriteString(fmt.Sprintf("%v", r.IsSystem))
+	builder.WriteString(", ")
+	builder.WriteString("is_default=")
+	builder.WriteString(fmt.Sprintf("%v", r.IsDefault))
+	builder.WriteString(", ")
+	if v := r.MaxUsers; v != nil {
+		builder.WriteString("max_users=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(r.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(r.UpdatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

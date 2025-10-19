@@ -6,15 +6,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
-	"github.com/shammianand/go-auth/ent/permissions"
 	"github.com/shammianand/go-auth/ent/predicate"
+	"github.com/shammianand/go-auth/ent/rolepermissions"
 	"github.com/shammianand/go-auth/ent/roles"
-	"github.com/shammianand/go-auth/ent/users"
+	"github.com/shammianand/go-auth/ent/userroles"
 )
 
 // RolesUpdate is the builder for updating Roles entities.
@@ -27,6 +28,20 @@ type RolesUpdate struct {
 // Where appends a list predicates to the RolesUpdate builder.
 func (ru *RolesUpdate) Where(ps ...predicate.Roles) *RolesUpdate {
 	ru.mutation.Where(ps...)
+	return ru
+}
+
+// SetCode sets the "code" field.
+func (ru *RolesUpdate) SetCode(s string) *RolesUpdate {
+	ru.mutation.SetCode(s)
+	return ru
+}
+
+// SetNillableCode sets the "code" field if the given value is not nil.
+func (ru *RolesUpdate) SetNillableCode(s *string) *RolesUpdate {
+	if s != nil {
+		ru.SetCode(*s)
+	}
 	return ru
 }
 
@@ -64,34 +79,95 @@ func (ru *RolesUpdate) ClearDescription() *RolesUpdate {
 	return ru
 }
 
-// AddUserIDs adds the "users" edge to the Users entity by IDs.
-func (ru *RolesUpdate) AddUserIDs(ids ...uuid.UUID) *RolesUpdate {
-	ru.mutation.AddUserIDs(ids...)
+// SetIsSystem sets the "is_system" field.
+func (ru *RolesUpdate) SetIsSystem(b bool) *RolesUpdate {
+	ru.mutation.SetIsSystem(b)
 	return ru
 }
 
-// AddUsers adds the "users" edges to the Users entity.
-func (ru *RolesUpdate) AddUsers(u ...*Users) *RolesUpdate {
+// SetNillableIsSystem sets the "is_system" field if the given value is not nil.
+func (ru *RolesUpdate) SetNillableIsSystem(b *bool) *RolesUpdate {
+	if b != nil {
+		ru.SetIsSystem(*b)
+	}
+	return ru
+}
+
+// SetIsDefault sets the "is_default" field.
+func (ru *RolesUpdate) SetIsDefault(b bool) *RolesUpdate {
+	ru.mutation.SetIsDefault(b)
+	return ru
+}
+
+// SetNillableIsDefault sets the "is_default" field if the given value is not nil.
+func (ru *RolesUpdate) SetNillableIsDefault(b *bool) *RolesUpdate {
+	if b != nil {
+		ru.SetIsDefault(*b)
+	}
+	return ru
+}
+
+// SetMaxUsers sets the "max_users" field.
+func (ru *RolesUpdate) SetMaxUsers(i int) *RolesUpdate {
+	ru.mutation.ResetMaxUsers()
+	ru.mutation.SetMaxUsers(i)
+	return ru
+}
+
+// SetNillableMaxUsers sets the "max_users" field if the given value is not nil.
+func (ru *RolesUpdate) SetNillableMaxUsers(i *int) *RolesUpdate {
+	if i != nil {
+		ru.SetMaxUsers(*i)
+	}
+	return ru
+}
+
+// AddMaxUsers adds i to the "max_users" field.
+func (ru *RolesUpdate) AddMaxUsers(i int) *RolesUpdate {
+	ru.mutation.AddMaxUsers(i)
+	return ru
+}
+
+// ClearMaxUsers clears the value of the "max_users" field.
+func (ru *RolesUpdate) ClearMaxUsers() *RolesUpdate {
+	ru.mutation.ClearMaxUsers()
+	return ru
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (ru *RolesUpdate) SetUpdatedAt(t time.Time) *RolesUpdate {
+	ru.mutation.SetUpdatedAt(t)
+	return ru
+}
+
+// AddUserRoleIDs adds the "user_roles" edge to the UserRoles entity by IDs.
+func (ru *RolesUpdate) AddUserRoleIDs(ids ...uuid.UUID) *RolesUpdate {
+	ru.mutation.AddUserRoleIDs(ids...)
+	return ru
+}
+
+// AddUserRoles adds the "user_roles" edges to the UserRoles entity.
+func (ru *RolesUpdate) AddUserRoles(u ...*UserRoles) *RolesUpdate {
 	ids := make([]uuid.UUID, len(u))
 	for i := range u {
 		ids[i] = u[i].ID
 	}
-	return ru.AddUserIDs(ids...)
+	return ru.AddUserRoleIDs(ids...)
 }
 
-// AddPermissionIDs adds the "permissions" edge to the Permissions entity by IDs.
-func (ru *RolesUpdate) AddPermissionIDs(ids ...int) *RolesUpdate {
-	ru.mutation.AddPermissionIDs(ids...)
+// AddRolePermissionIDs adds the "role_permissions" edge to the RolePermissions entity by IDs.
+func (ru *RolesUpdate) AddRolePermissionIDs(ids ...int) *RolesUpdate {
+	ru.mutation.AddRolePermissionIDs(ids...)
 	return ru
 }
 
-// AddPermissions adds the "permissions" edges to the Permissions entity.
-func (ru *RolesUpdate) AddPermissions(p ...*Permissions) *RolesUpdate {
-	ids := make([]int, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+// AddRolePermissions adds the "role_permissions" edges to the RolePermissions entity.
+func (ru *RolesUpdate) AddRolePermissions(r ...*RolePermissions) *RolesUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
 	}
-	return ru.AddPermissionIDs(ids...)
+	return ru.AddRolePermissionIDs(ids...)
 }
 
 // Mutation returns the RolesMutation object of the builder.
@@ -99,50 +175,51 @@ func (ru *RolesUpdate) Mutation() *RolesMutation {
 	return ru.mutation
 }
 
-// ClearUsers clears all "users" edges to the Users entity.
-func (ru *RolesUpdate) ClearUsers() *RolesUpdate {
-	ru.mutation.ClearUsers()
+// ClearUserRoles clears all "user_roles" edges to the UserRoles entity.
+func (ru *RolesUpdate) ClearUserRoles() *RolesUpdate {
+	ru.mutation.ClearUserRoles()
 	return ru
 }
 
-// RemoveUserIDs removes the "users" edge to Users entities by IDs.
-func (ru *RolesUpdate) RemoveUserIDs(ids ...uuid.UUID) *RolesUpdate {
-	ru.mutation.RemoveUserIDs(ids...)
+// RemoveUserRoleIDs removes the "user_roles" edge to UserRoles entities by IDs.
+func (ru *RolesUpdate) RemoveUserRoleIDs(ids ...uuid.UUID) *RolesUpdate {
+	ru.mutation.RemoveUserRoleIDs(ids...)
 	return ru
 }
 
-// RemoveUsers removes "users" edges to Users entities.
-func (ru *RolesUpdate) RemoveUsers(u ...*Users) *RolesUpdate {
+// RemoveUserRoles removes "user_roles" edges to UserRoles entities.
+func (ru *RolesUpdate) RemoveUserRoles(u ...*UserRoles) *RolesUpdate {
 	ids := make([]uuid.UUID, len(u))
 	for i := range u {
 		ids[i] = u[i].ID
 	}
-	return ru.RemoveUserIDs(ids...)
+	return ru.RemoveUserRoleIDs(ids...)
 }
 
-// ClearPermissions clears all "permissions" edges to the Permissions entity.
-func (ru *RolesUpdate) ClearPermissions() *RolesUpdate {
-	ru.mutation.ClearPermissions()
+// ClearRolePermissions clears all "role_permissions" edges to the RolePermissions entity.
+func (ru *RolesUpdate) ClearRolePermissions() *RolesUpdate {
+	ru.mutation.ClearRolePermissions()
 	return ru
 }
 
-// RemovePermissionIDs removes the "permissions" edge to Permissions entities by IDs.
-func (ru *RolesUpdate) RemovePermissionIDs(ids ...int) *RolesUpdate {
-	ru.mutation.RemovePermissionIDs(ids...)
+// RemoveRolePermissionIDs removes the "role_permissions" edge to RolePermissions entities by IDs.
+func (ru *RolesUpdate) RemoveRolePermissionIDs(ids ...int) *RolesUpdate {
+	ru.mutation.RemoveRolePermissionIDs(ids...)
 	return ru
 }
 
-// RemovePermissions removes "permissions" edges to Permissions entities.
-func (ru *RolesUpdate) RemovePermissions(p ...*Permissions) *RolesUpdate {
-	ids := make([]int, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+// RemoveRolePermissions removes "role_permissions" edges to RolePermissions entities.
+func (ru *RolesUpdate) RemoveRolePermissions(r ...*RolePermissions) *RolesUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
 	}
-	return ru.RemovePermissionIDs(ids...)
+	return ru.RemoveRolePermissionIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (ru *RolesUpdate) Save(ctx context.Context) (int, error) {
+	ru.defaults()
 	return withHooks(ctx, ru.sqlSave, ru.mutation, ru.hooks)
 }
 
@@ -168,7 +245,33 @@ func (ru *RolesUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (ru *RolesUpdate) defaults() {
+	if _, ok := ru.mutation.UpdatedAt(); !ok {
+		v := roles.UpdateDefaultUpdatedAt()
+		ru.mutation.SetUpdatedAt(v)
+	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (ru *RolesUpdate) check() error {
+	if v, ok := ru.mutation.Code(); ok {
+		if err := roles.CodeValidator(v); err != nil {
+			return &ValidationError{Name: "code", err: fmt.Errorf(`ent: validator failed for field "Roles.code": %w`, err)}
+		}
+	}
+	if v, ok := ru.mutation.Name(); ok {
+		if err := roles.NameValidator(v); err != nil {
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Roles.name": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (ru *RolesUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := ru.check(); err != nil {
+		return n, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(roles.Table, roles.Columns, sqlgraph.NewFieldSpec(roles.FieldID, field.TypeInt))
 	if ps := ru.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -176,6 +279,9 @@ func (ru *RolesUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := ru.mutation.Code(); ok {
+		_spec.SetField(roles.FieldCode, field.TypeString, value)
 	}
 	if value, ok := ru.mutation.Name(); ok {
 		_spec.SetField(roles.FieldName, field.TypeString, value)
@@ -186,28 +292,46 @@ func (ru *RolesUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if ru.mutation.DescriptionCleared() {
 		_spec.ClearField(roles.FieldDescription, field.TypeString)
 	}
-	if ru.mutation.UsersCleared() {
+	if value, ok := ru.mutation.IsSystem(); ok {
+		_spec.SetField(roles.FieldIsSystem, field.TypeBool, value)
+	}
+	if value, ok := ru.mutation.IsDefault(); ok {
+		_spec.SetField(roles.FieldIsDefault, field.TypeBool, value)
+	}
+	if value, ok := ru.mutation.MaxUsers(); ok {
+		_spec.SetField(roles.FieldMaxUsers, field.TypeInt, value)
+	}
+	if value, ok := ru.mutation.AddedMaxUsers(); ok {
+		_spec.AddField(roles.FieldMaxUsers, field.TypeInt, value)
+	}
+	if ru.mutation.MaxUsersCleared() {
+		_spec.ClearField(roles.FieldMaxUsers, field.TypeInt)
+	}
+	if value, ok := ru.mutation.UpdatedAt(); ok {
+		_spec.SetField(roles.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if ru.mutation.UserRolesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   roles.UsersTable,
-			Columns: roles.UsersPrimaryKey,
+			Table:   roles.UserRolesTable,
+			Columns: []string{roles.UserRolesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(userroles.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.RemovedUsersIDs(); len(nodes) > 0 && !ru.mutation.UsersCleared() {
+	if nodes := ru.mutation.RemovedUserRolesIDs(); len(nodes) > 0 && !ru.mutation.UserRolesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   roles.UsersTable,
-			Columns: roles.UsersPrimaryKey,
+			Table:   roles.UserRolesTable,
+			Columns: []string{roles.UserRolesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(userroles.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -215,15 +339,15 @@ func (ru *RolesUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.UsersIDs(); len(nodes) > 0 {
+	if nodes := ru.mutation.UserRolesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   roles.UsersTable,
-			Columns: roles.UsersPrimaryKey,
+			Table:   roles.UserRolesTable,
+			Columns: []string{roles.UserRolesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(userroles.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -231,28 +355,28 @@ func (ru *RolesUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if ru.mutation.PermissionsCleared() {
+	if ru.mutation.RolePermissionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   roles.PermissionsTable,
-			Columns: roles.PermissionsPrimaryKey,
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   roles.RolePermissionsTable,
+			Columns: []string{roles.RolePermissionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(permissions.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(rolepermissions.FieldID, field.TypeInt),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.RemovedPermissionsIDs(); len(nodes) > 0 && !ru.mutation.PermissionsCleared() {
+	if nodes := ru.mutation.RemovedRolePermissionsIDs(); len(nodes) > 0 && !ru.mutation.RolePermissionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   roles.PermissionsTable,
-			Columns: roles.PermissionsPrimaryKey,
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   roles.RolePermissionsTable,
+			Columns: []string{roles.RolePermissionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(permissions.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(rolepermissions.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -260,15 +384,15 @@ func (ru *RolesUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.PermissionsIDs(); len(nodes) > 0 {
+	if nodes := ru.mutation.RolePermissionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   roles.PermissionsTable,
-			Columns: roles.PermissionsPrimaryKey,
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   roles.RolePermissionsTable,
+			Columns: []string{roles.RolePermissionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(permissions.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(rolepermissions.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -294,6 +418,20 @@ type RolesUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *RolesMutation
+}
+
+// SetCode sets the "code" field.
+func (ruo *RolesUpdateOne) SetCode(s string) *RolesUpdateOne {
+	ruo.mutation.SetCode(s)
+	return ruo
+}
+
+// SetNillableCode sets the "code" field if the given value is not nil.
+func (ruo *RolesUpdateOne) SetNillableCode(s *string) *RolesUpdateOne {
+	if s != nil {
+		ruo.SetCode(*s)
+	}
+	return ruo
 }
 
 // SetName sets the "name" field.
@@ -330,34 +468,95 @@ func (ruo *RolesUpdateOne) ClearDescription() *RolesUpdateOne {
 	return ruo
 }
 
-// AddUserIDs adds the "users" edge to the Users entity by IDs.
-func (ruo *RolesUpdateOne) AddUserIDs(ids ...uuid.UUID) *RolesUpdateOne {
-	ruo.mutation.AddUserIDs(ids...)
+// SetIsSystem sets the "is_system" field.
+func (ruo *RolesUpdateOne) SetIsSystem(b bool) *RolesUpdateOne {
+	ruo.mutation.SetIsSystem(b)
 	return ruo
 }
 
-// AddUsers adds the "users" edges to the Users entity.
-func (ruo *RolesUpdateOne) AddUsers(u ...*Users) *RolesUpdateOne {
+// SetNillableIsSystem sets the "is_system" field if the given value is not nil.
+func (ruo *RolesUpdateOne) SetNillableIsSystem(b *bool) *RolesUpdateOne {
+	if b != nil {
+		ruo.SetIsSystem(*b)
+	}
+	return ruo
+}
+
+// SetIsDefault sets the "is_default" field.
+func (ruo *RolesUpdateOne) SetIsDefault(b bool) *RolesUpdateOne {
+	ruo.mutation.SetIsDefault(b)
+	return ruo
+}
+
+// SetNillableIsDefault sets the "is_default" field if the given value is not nil.
+func (ruo *RolesUpdateOne) SetNillableIsDefault(b *bool) *RolesUpdateOne {
+	if b != nil {
+		ruo.SetIsDefault(*b)
+	}
+	return ruo
+}
+
+// SetMaxUsers sets the "max_users" field.
+func (ruo *RolesUpdateOne) SetMaxUsers(i int) *RolesUpdateOne {
+	ruo.mutation.ResetMaxUsers()
+	ruo.mutation.SetMaxUsers(i)
+	return ruo
+}
+
+// SetNillableMaxUsers sets the "max_users" field if the given value is not nil.
+func (ruo *RolesUpdateOne) SetNillableMaxUsers(i *int) *RolesUpdateOne {
+	if i != nil {
+		ruo.SetMaxUsers(*i)
+	}
+	return ruo
+}
+
+// AddMaxUsers adds i to the "max_users" field.
+func (ruo *RolesUpdateOne) AddMaxUsers(i int) *RolesUpdateOne {
+	ruo.mutation.AddMaxUsers(i)
+	return ruo
+}
+
+// ClearMaxUsers clears the value of the "max_users" field.
+func (ruo *RolesUpdateOne) ClearMaxUsers() *RolesUpdateOne {
+	ruo.mutation.ClearMaxUsers()
+	return ruo
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (ruo *RolesUpdateOne) SetUpdatedAt(t time.Time) *RolesUpdateOne {
+	ruo.mutation.SetUpdatedAt(t)
+	return ruo
+}
+
+// AddUserRoleIDs adds the "user_roles" edge to the UserRoles entity by IDs.
+func (ruo *RolesUpdateOne) AddUserRoleIDs(ids ...uuid.UUID) *RolesUpdateOne {
+	ruo.mutation.AddUserRoleIDs(ids...)
+	return ruo
+}
+
+// AddUserRoles adds the "user_roles" edges to the UserRoles entity.
+func (ruo *RolesUpdateOne) AddUserRoles(u ...*UserRoles) *RolesUpdateOne {
 	ids := make([]uuid.UUID, len(u))
 	for i := range u {
 		ids[i] = u[i].ID
 	}
-	return ruo.AddUserIDs(ids...)
+	return ruo.AddUserRoleIDs(ids...)
 }
 
-// AddPermissionIDs adds the "permissions" edge to the Permissions entity by IDs.
-func (ruo *RolesUpdateOne) AddPermissionIDs(ids ...int) *RolesUpdateOne {
-	ruo.mutation.AddPermissionIDs(ids...)
+// AddRolePermissionIDs adds the "role_permissions" edge to the RolePermissions entity by IDs.
+func (ruo *RolesUpdateOne) AddRolePermissionIDs(ids ...int) *RolesUpdateOne {
+	ruo.mutation.AddRolePermissionIDs(ids...)
 	return ruo
 }
 
-// AddPermissions adds the "permissions" edges to the Permissions entity.
-func (ruo *RolesUpdateOne) AddPermissions(p ...*Permissions) *RolesUpdateOne {
-	ids := make([]int, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+// AddRolePermissions adds the "role_permissions" edges to the RolePermissions entity.
+func (ruo *RolesUpdateOne) AddRolePermissions(r ...*RolePermissions) *RolesUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
 	}
-	return ruo.AddPermissionIDs(ids...)
+	return ruo.AddRolePermissionIDs(ids...)
 }
 
 // Mutation returns the RolesMutation object of the builder.
@@ -365,46 +564,46 @@ func (ruo *RolesUpdateOne) Mutation() *RolesMutation {
 	return ruo.mutation
 }
 
-// ClearUsers clears all "users" edges to the Users entity.
-func (ruo *RolesUpdateOne) ClearUsers() *RolesUpdateOne {
-	ruo.mutation.ClearUsers()
+// ClearUserRoles clears all "user_roles" edges to the UserRoles entity.
+func (ruo *RolesUpdateOne) ClearUserRoles() *RolesUpdateOne {
+	ruo.mutation.ClearUserRoles()
 	return ruo
 }
 
-// RemoveUserIDs removes the "users" edge to Users entities by IDs.
-func (ruo *RolesUpdateOne) RemoveUserIDs(ids ...uuid.UUID) *RolesUpdateOne {
-	ruo.mutation.RemoveUserIDs(ids...)
+// RemoveUserRoleIDs removes the "user_roles" edge to UserRoles entities by IDs.
+func (ruo *RolesUpdateOne) RemoveUserRoleIDs(ids ...uuid.UUID) *RolesUpdateOne {
+	ruo.mutation.RemoveUserRoleIDs(ids...)
 	return ruo
 }
 
-// RemoveUsers removes "users" edges to Users entities.
-func (ruo *RolesUpdateOne) RemoveUsers(u ...*Users) *RolesUpdateOne {
+// RemoveUserRoles removes "user_roles" edges to UserRoles entities.
+func (ruo *RolesUpdateOne) RemoveUserRoles(u ...*UserRoles) *RolesUpdateOne {
 	ids := make([]uuid.UUID, len(u))
 	for i := range u {
 		ids[i] = u[i].ID
 	}
-	return ruo.RemoveUserIDs(ids...)
+	return ruo.RemoveUserRoleIDs(ids...)
 }
 
-// ClearPermissions clears all "permissions" edges to the Permissions entity.
-func (ruo *RolesUpdateOne) ClearPermissions() *RolesUpdateOne {
-	ruo.mutation.ClearPermissions()
+// ClearRolePermissions clears all "role_permissions" edges to the RolePermissions entity.
+func (ruo *RolesUpdateOne) ClearRolePermissions() *RolesUpdateOne {
+	ruo.mutation.ClearRolePermissions()
 	return ruo
 }
 
-// RemovePermissionIDs removes the "permissions" edge to Permissions entities by IDs.
-func (ruo *RolesUpdateOne) RemovePermissionIDs(ids ...int) *RolesUpdateOne {
-	ruo.mutation.RemovePermissionIDs(ids...)
+// RemoveRolePermissionIDs removes the "role_permissions" edge to RolePermissions entities by IDs.
+func (ruo *RolesUpdateOne) RemoveRolePermissionIDs(ids ...int) *RolesUpdateOne {
+	ruo.mutation.RemoveRolePermissionIDs(ids...)
 	return ruo
 }
 
-// RemovePermissions removes "permissions" edges to Permissions entities.
-func (ruo *RolesUpdateOne) RemovePermissions(p ...*Permissions) *RolesUpdateOne {
-	ids := make([]int, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+// RemoveRolePermissions removes "role_permissions" edges to RolePermissions entities.
+func (ruo *RolesUpdateOne) RemoveRolePermissions(r ...*RolePermissions) *RolesUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
 	}
-	return ruo.RemovePermissionIDs(ids...)
+	return ruo.RemoveRolePermissionIDs(ids...)
 }
 
 // Where appends a list predicates to the RolesUpdate builder.
@@ -422,6 +621,7 @@ func (ruo *RolesUpdateOne) Select(field string, fields ...string) *RolesUpdateOn
 
 // Save executes the query and returns the updated Roles entity.
 func (ruo *RolesUpdateOne) Save(ctx context.Context) (*Roles, error) {
+	ruo.defaults()
 	return withHooks(ctx, ruo.sqlSave, ruo.mutation, ruo.hooks)
 }
 
@@ -447,7 +647,33 @@ func (ruo *RolesUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (ruo *RolesUpdateOne) defaults() {
+	if _, ok := ruo.mutation.UpdatedAt(); !ok {
+		v := roles.UpdateDefaultUpdatedAt()
+		ruo.mutation.SetUpdatedAt(v)
+	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (ruo *RolesUpdateOne) check() error {
+	if v, ok := ruo.mutation.Code(); ok {
+		if err := roles.CodeValidator(v); err != nil {
+			return &ValidationError{Name: "code", err: fmt.Errorf(`ent: validator failed for field "Roles.code": %w`, err)}
+		}
+	}
+	if v, ok := ruo.mutation.Name(); ok {
+		if err := roles.NameValidator(v); err != nil {
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Roles.name": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (ruo *RolesUpdateOne) sqlSave(ctx context.Context) (_node *Roles, err error) {
+	if err := ruo.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(roles.Table, roles.Columns, sqlgraph.NewFieldSpec(roles.FieldID, field.TypeInt))
 	id, ok := ruo.mutation.ID()
 	if !ok {
@@ -473,6 +699,9 @@ func (ruo *RolesUpdateOne) sqlSave(ctx context.Context) (_node *Roles, err error
 			}
 		}
 	}
+	if value, ok := ruo.mutation.Code(); ok {
+		_spec.SetField(roles.FieldCode, field.TypeString, value)
+	}
 	if value, ok := ruo.mutation.Name(); ok {
 		_spec.SetField(roles.FieldName, field.TypeString, value)
 	}
@@ -482,28 +711,46 @@ func (ruo *RolesUpdateOne) sqlSave(ctx context.Context) (_node *Roles, err error
 	if ruo.mutation.DescriptionCleared() {
 		_spec.ClearField(roles.FieldDescription, field.TypeString)
 	}
-	if ruo.mutation.UsersCleared() {
+	if value, ok := ruo.mutation.IsSystem(); ok {
+		_spec.SetField(roles.FieldIsSystem, field.TypeBool, value)
+	}
+	if value, ok := ruo.mutation.IsDefault(); ok {
+		_spec.SetField(roles.FieldIsDefault, field.TypeBool, value)
+	}
+	if value, ok := ruo.mutation.MaxUsers(); ok {
+		_spec.SetField(roles.FieldMaxUsers, field.TypeInt, value)
+	}
+	if value, ok := ruo.mutation.AddedMaxUsers(); ok {
+		_spec.AddField(roles.FieldMaxUsers, field.TypeInt, value)
+	}
+	if ruo.mutation.MaxUsersCleared() {
+		_spec.ClearField(roles.FieldMaxUsers, field.TypeInt)
+	}
+	if value, ok := ruo.mutation.UpdatedAt(); ok {
+		_spec.SetField(roles.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if ruo.mutation.UserRolesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   roles.UsersTable,
-			Columns: roles.UsersPrimaryKey,
+			Table:   roles.UserRolesTable,
+			Columns: []string{roles.UserRolesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(userroles.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.RemovedUsersIDs(); len(nodes) > 0 && !ruo.mutation.UsersCleared() {
+	if nodes := ruo.mutation.RemovedUserRolesIDs(); len(nodes) > 0 && !ruo.mutation.UserRolesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   roles.UsersTable,
-			Columns: roles.UsersPrimaryKey,
+			Table:   roles.UserRolesTable,
+			Columns: []string{roles.UserRolesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(userroles.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -511,15 +758,15 @@ func (ruo *RolesUpdateOne) sqlSave(ctx context.Context) (_node *Roles, err error
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.UsersIDs(); len(nodes) > 0 {
+	if nodes := ruo.mutation.UserRolesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   roles.UsersTable,
-			Columns: roles.UsersPrimaryKey,
+			Table:   roles.UserRolesTable,
+			Columns: []string{roles.UserRolesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(userroles.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -527,28 +774,28 @@ func (ruo *RolesUpdateOne) sqlSave(ctx context.Context) (_node *Roles, err error
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if ruo.mutation.PermissionsCleared() {
+	if ruo.mutation.RolePermissionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   roles.PermissionsTable,
-			Columns: roles.PermissionsPrimaryKey,
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   roles.RolePermissionsTable,
+			Columns: []string{roles.RolePermissionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(permissions.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(rolepermissions.FieldID, field.TypeInt),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.RemovedPermissionsIDs(); len(nodes) > 0 && !ruo.mutation.PermissionsCleared() {
+	if nodes := ruo.mutation.RemovedRolePermissionsIDs(); len(nodes) > 0 && !ruo.mutation.RolePermissionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   roles.PermissionsTable,
-			Columns: roles.PermissionsPrimaryKey,
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   roles.RolePermissionsTable,
+			Columns: []string{roles.RolePermissionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(permissions.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(rolepermissions.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -556,15 +803,15 @@ func (ruo *RolesUpdateOne) sqlSave(ctx context.Context) (_node *Roles, err error
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.PermissionsIDs(); len(nodes) > 0 {
+	if nodes := ruo.mutation.RolePermissionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   roles.PermissionsTable,
-			Columns: roles.PermissionsPrimaryKey,
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   roles.RolePermissionsTable,
+			Columns: []string{roles.RolePermissionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(permissions.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(rolepermissions.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

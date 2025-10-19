@@ -6,9 +6,15 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/shammianand/go-auth/ent/auditlogs"
+	"github.com/shammianand/go-auth/ent/emaillogs"
+	"github.com/shammianand/go-auth/ent/emailverifications"
+	"github.com/shammianand/go-auth/ent/passwordresets"
 	"github.com/shammianand/go-auth/ent/permissions"
+	"github.com/shammianand/go-auth/ent/rolepermissions"
 	"github.com/shammianand/go-auth/ent/roles"
 	"github.com/shammianand/go-auth/ent/schema"
+	"github.com/shammianand/go-auth/ent/userroles"
 	"github.com/shammianand/go-auth/ent/users"
 )
 
@@ -16,18 +22,158 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	auditlogsFields := schema.AuditLogs{}.Fields()
+	_ = auditlogsFields
+	// auditlogsDescActionType is the schema descriptor for action_type field.
+	auditlogsDescActionType := auditlogsFields[2].Descriptor()
+	// auditlogs.ActionTypeValidator is a validator for the "action_type" field. It is called by the builders before save.
+	auditlogs.ActionTypeValidator = auditlogsDescActionType.Validators[0].(func(string) error)
+	// auditlogsDescResourceType is the schema descriptor for resource_type field.
+	auditlogsDescResourceType := auditlogsFields[3].Descriptor()
+	// auditlogs.ResourceTypeValidator is a validator for the "resource_type" field. It is called by the builders before save.
+	auditlogs.ResourceTypeValidator = auditlogsDescResourceType.Validators[0].(func(string) error)
+	// auditlogsDescCreatedAt is the schema descriptor for created_at field.
+	auditlogsDescCreatedAt := auditlogsFields[9].Descriptor()
+	// auditlogs.DefaultCreatedAt holds the default value on creation for the created_at field.
+	auditlogs.DefaultCreatedAt = auditlogsDescCreatedAt.Default.(func() time.Time)
+	// auditlogsDescID is the schema descriptor for id field.
+	auditlogsDescID := auditlogsFields[0].Descriptor()
+	// auditlogs.DefaultID holds the default value on creation for the id field.
+	auditlogs.DefaultID = auditlogsDescID.Default.(func() uuid.UUID)
+	emaillogsFields := schema.EmailLogs{}.Fields()
+	_ = emaillogsFields
+	// emaillogsDescRecipient is the schema descriptor for recipient field.
+	emaillogsDescRecipient := emaillogsFields[2].Descriptor()
+	// emaillogs.RecipientValidator is a validator for the "recipient" field. It is called by the builders before save.
+	emaillogs.RecipientValidator = emaillogsDescRecipient.Validators[0].(func(string) error)
+	// emaillogsDescEmailType is the schema descriptor for email_type field.
+	emaillogsDescEmailType := emaillogsFields[3].Descriptor()
+	// emaillogs.EmailTypeValidator is a validator for the "email_type" field. It is called by the builders before save.
+	emaillogs.EmailTypeValidator = emaillogsDescEmailType.Validators[0].(func(string) error)
+	// emaillogsDescStatus is the schema descriptor for status field.
+	emaillogsDescStatus := emaillogsFields[5].Descriptor()
+	// emaillogs.DefaultStatus holds the default value on creation for the status field.
+	emaillogs.DefaultStatus = emaillogsDescStatus.Default.(string)
+	// emaillogsDescProvider is the schema descriptor for provider field.
+	emaillogsDescProvider := emaillogsFields[6].Descriptor()
+	// emaillogs.DefaultProvider holds the default value on creation for the provider field.
+	emaillogs.DefaultProvider = emaillogsDescProvider.Default.(string)
+	// emaillogsDescSentAt is the schema descriptor for sent_at field.
+	emaillogsDescSentAt := emaillogsFields[10].Descriptor()
+	// emaillogs.DefaultSentAt holds the default value on creation for the sent_at field.
+	emaillogs.DefaultSentAt = emaillogsDescSentAt.Default.(func() time.Time)
+	// emaillogsDescID is the schema descriptor for id field.
+	emaillogsDescID := emaillogsFields[0].Descriptor()
+	// emaillogs.DefaultID holds the default value on creation for the id field.
+	emaillogs.DefaultID = emaillogsDescID.Default.(func() uuid.UUID)
+	emailverificationsFields := schema.EmailVerifications{}.Fields()
+	_ = emailverificationsFields
+	// emailverificationsDescEmail is the schema descriptor for email field.
+	emailverificationsDescEmail := emailverificationsFields[2].Descriptor()
+	// emailverifications.EmailValidator is a validator for the "email" field. It is called by the builders before save.
+	emailverifications.EmailValidator = emailverificationsDescEmail.Validators[0].(func(string) error)
+	// emailverificationsDescToken is the schema descriptor for token field.
+	emailverificationsDescToken := emailverificationsFields[3].Descriptor()
+	// emailverifications.TokenValidator is a validator for the "token" field. It is called by the builders before save.
+	emailverifications.TokenValidator = emailverificationsDescToken.Validators[0].(func(string) error)
+	// emailverificationsDescIsUsed is the schema descriptor for is_used field.
+	emailverificationsDescIsUsed := emailverificationsFields[5].Descriptor()
+	// emailverifications.DefaultIsUsed holds the default value on creation for the is_used field.
+	emailverifications.DefaultIsUsed = emailverificationsDescIsUsed.Default.(bool)
+	// emailverificationsDescCreatedAt is the schema descriptor for created_at field.
+	emailverificationsDescCreatedAt := emailverificationsFields[8].Descriptor()
+	// emailverifications.DefaultCreatedAt holds the default value on creation for the created_at field.
+	emailverifications.DefaultCreatedAt = emailverificationsDescCreatedAt.Default.(func() time.Time)
+	// emailverificationsDescID is the schema descriptor for id field.
+	emailverificationsDescID := emailverificationsFields[0].Descriptor()
+	// emailverifications.DefaultID holds the default value on creation for the id field.
+	emailverifications.DefaultID = emailverificationsDescID.Default.(func() uuid.UUID)
+	passwordresetsFields := schema.PasswordResets{}.Fields()
+	_ = passwordresetsFields
+	// passwordresetsDescEmail is the schema descriptor for email field.
+	passwordresetsDescEmail := passwordresetsFields[2].Descriptor()
+	// passwordresets.EmailValidator is a validator for the "email" field. It is called by the builders before save.
+	passwordresets.EmailValidator = passwordresetsDescEmail.Validators[0].(func(string) error)
+	// passwordresetsDescToken is the schema descriptor for token field.
+	passwordresetsDescToken := passwordresetsFields[3].Descriptor()
+	// passwordresets.TokenValidator is a validator for the "token" field. It is called by the builders before save.
+	passwordresets.TokenValidator = passwordresetsDescToken.Validators[0].(func(string) error)
+	// passwordresetsDescIsUsed is the schema descriptor for is_used field.
+	passwordresetsDescIsUsed := passwordresetsFields[5].Descriptor()
+	// passwordresets.DefaultIsUsed holds the default value on creation for the is_used field.
+	passwordresets.DefaultIsUsed = passwordresetsDescIsUsed.Default.(bool)
+	// passwordresetsDescCreatedAt is the schema descriptor for created_at field.
+	passwordresetsDescCreatedAt := passwordresetsFields[8].Descriptor()
+	// passwordresets.DefaultCreatedAt holds the default value on creation for the created_at field.
+	passwordresets.DefaultCreatedAt = passwordresetsDescCreatedAt.Default.(func() time.Time)
+	// passwordresetsDescID is the schema descriptor for id field.
+	passwordresetsDescID := passwordresetsFields[0].Descriptor()
+	// passwordresets.DefaultID holds the default value on creation for the id field.
+	passwordresets.DefaultID = passwordresetsDescID.Default.(func() uuid.UUID)
 	permissionsFields := schema.Permissions{}.Fields()
 	_ = permissionsFields
+	// permissionsDescCode is the schema descriptor for code field.
+	permissionsDescCode := permissionsFields[1].Descriptor()
+	// permissions.CodeValidator is a validator for the "code" field. It is called by the builders before save.
+	permissions.CodeValidator = permissionsDescCode.Validators[0].(func(string) error)
+	// permissionsDescName is the schema descriptor for name field.
+	permissionsDescName := permissionsFields[2].Descriptor()
+	// permissions.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	permissions.NameValidator = permissionsDescName.Validators[0].(func(string) error)
 	// permissionsDescCreatedAt is the schema descriptor for created_at field.
-	permissionsDescCreatedAt := permissionsFields[3].Descriptor()
+	permissionsDescCreatedAt := permissionsFields[6].Descriptor()
 	// permissions.DefaultCreatedAt holds the default value on creation for the created_at field.
 	permissions.DefaultCreatedAt = permissionsDescCreatedAt.Default.(func() time.Time)
+	// permissionsDescUpdatedAt is the schema descriptor for updated_at field.
+	permissionsDescUpdatedAt := permissionsFields[7].Descriptor()
+	// permissions.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	permissions.DefaultUpdatedAt = permissionsDescUpdatedAt.Default.(func() time.Time)
+	// permissions.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	permissions.UpdateDefaultUpdatedAt = permissionsDescUpdatedAt.UpdateDefault.(func() time.Time)
+	rolepermissionsFields := schema.RolePermissions{}.Fields()
+	_ = rolepermissionsFields
+	// rolepermissionsDescAssignedAt is the schema descriptor for assigned_at field.
+	rolepermissionsDescAssignedAt := rolepermissionsFields[3].Descriptor()
+	// rolepermissions.DefaultAssignedAt holds the default value on creation for the assigned_at field.
+	rolepermissions.DefaultAssignedAt = rolepermissionsDescAssignedAt.Default.(func() time.Time)
 	rolesFields := schema.Roles{}.Fields()
 	_ = rolesFields
+	// rolesDescCode is the schema descriptor for code field.
+	rolesDescCode := rolesFields[1].Descriptor()
+	// roles.CodeValidator is a validator for the "code" field. It is called by the builders before save.
+	roles.CodeValidator = rolesDescCode.Validators[0].(func(string) error)
+	// rolesDescName is the schema descriptor for name field.
+	rolesDescName := rolesFields[2].Descriptor()
+	// roles.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	roles.NameValidator = rolesDescName.Validators[0].(func(string) error)
+	// rolesDescIsSystem is the schema descriptor for is_system field.
+	rolesDescIsSystem := rolesFields[4].Descriptor()
+	// roles.DefaultIsSystem holds the default value on creation for the is_system field.
+	roles.DefaultIsSystem = rolesDescIsSystem.Default.(bool)
+	// rolesDescIsDefault is the schema descriptor for is_default field.
+	rolesDescIsDefault := rolesFields[5].Descriptor()
+	// roles.DefaultIsDefault holds the default value on creation for the is_default field.
+	roles.DefaultIsDefault = rolesDescIsDefault.Default.(bool)
 	// rolesDescCreatedAt is the schema descriptor for created_at field.
-	rolesDescCreatedAt := rolesFields[3].Descriptor()
+	rolesDescCreatedAt := rolesFields[7].Descriptor()
 	// roles.DefaultCreatedAt holds the default value on creation for the created_at field.
 	roles.DefaultCreatedAt = rolesDescCreatedAt.Default.(func() time.Time)
+	// rolesDescUpdatedAt is the schema descriptor for updated_at field.
+	rolesDescUpdatedAt := rolesFields[8].Descriptor()
+	// roles.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	roles.DefaultUpdatedAt = rolesDescUpdatedAt.Default.(func() time.Time)
+	// roles.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	roles.UpdateDefaultUpdatedAt = rolesDescUpdatedAt.UpdateDefault.(func() time.Time)
+	userrolesFields := schema.UserRoles{}.Fields()
+	_ = userrolesFields
+	// userrolesDescAssignedAt is the schema descriptor for assigned_at field.
+	userrolesDescAssignedAt := userrolesFields[4].Descriptor()
+	// userroles.DefaultAssignedAt holds the default value on creation for the assigned_at field.
+	userroles.DefaultAssignedAt = userrolesDescAssignedAt.Default.(func() time.Time)
+	// userrolesDescID is the schema descriptor for id field.
+	userrolesDescID := userrolesFields[0].Descriptor()
+	// userroles.DefaultID holds the default value on creation for the id field.
+	userroles.DefaultID = userrolesDescID.Default.(func() uuid.UUID)
 	usersFields := schema.Users{}.Fields()
 	_ = usersFields
 	// usersDescEmail is the schema descriptor for email field.
@@ -38,20 +184,30 @@ func init() {
 	usersDescPasswordHash := usersFields[2].Descriptor()
 	// users.PasswordHashValidator is a validator for the "password_hash" field. It is called by the builders before save.
 	users.PasswordHashValidator = usersDescPasswordHash.Validators[0].(func(string) error)
+	// usersDescFirstName is the schema descriptor for first_name field.
+	usersDescFirstName := usersFields[3].Descriptor()
+	// users.FirstNameValidator is a validator for the "first_name" field. It is called by the builders before save.
+	users.FirstNameValidator = usersDescFirstName.Validators[0].(func(string) error)
+	// usersDescLastName is the schema descriptor for last_name field.
+	usersDescLastName := usersFields[4].Descriptor()
+	// users.LastNameValidator is a validator for the "last_name" field. It is called by the builders before save.
+	users.LastNameValidator = usersDescLastName.Validators[0].(func(string) error)
 	// usersDescCreatedAt is the schema descriptor for created_at field.
-	usersDescCreatedAt := usersFields[3].Descriptor()
+	usersDescCreatedAt := usersFields[5].Descriptor()
 	// users.DefaultCreatedAt holds the default value on creation for the created_at field.
 	users.DefaultCreatedAt = usersDescCreatedAt.Default.(func() time.Time)
 	// usersDescUpdatedAt is the schema descriptor for updated_at field.
-	usersDescUpdatedAt := usersFields[4].Descriptor()
+	usersDescUpdatedAt := usersFields[6].Descriptor()
 	// users.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	users.DefaultUpdatedAt = usersDescUpdatedAt.Default.(func() time.Time)
+	// users.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	users.UpdateDefaultUpdatedAt = usersDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// usersDescIsActive is the schema descriptor for is_active field.
-	usersDescIsActive := usersFields[6].Descriptor()
+	usersDescIsActive := usersFields[8].Descriptor()
 	// users.DefaultIsActive holds the default value on creation for the is_active field.
 	users.DefaultIsActive = usersDescIsActive.Default.(bool)
 	// usersDescEmailVerified is the schema descriptor for email_verified field.
-	usersDescEmailVerified := usersFields[7].Descriptor()
+	usersDescEmailVerified := usersFields[9].Descriptor()
 	// users.DefaultEmailVerified holds the default value on creation for the email_verified field.
 	users.DefaultEmailVerified = usersDescEmailVerified.Default.(bool)
 	// usersDescID is the schema descriptor for id field.

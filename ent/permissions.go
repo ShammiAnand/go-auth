@@ -17,12 +17,20 @@ type Permissions struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// Unique code identifier (e.g., users.read, rbac.write)
+	Code string `json:"code,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
+	// Resource this permission applies to (e.g., users, roles)
+	Resource string `json:"resource,omitempty"`
+	// Action this permission allows (e.g., read, write, delete)
+	Action string `json:"action,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PermissionsQuery when eager-loading is set.
 	Edges        PermissionsEdges `json:"edges"`
@@ -31,20 +39,20 @@ type Permissions struct {
 
 // PermissionsEdges holds the relations/edges for other nodes in the graph.
 type PermissionsEdges struct {
-	// Roles holds the value of the roles edge.
-	Roles []*Roles `json:"roles,omitempty"`
+	// RolePermissions holds the value of the role_permissions edge.
+	RolePermissions []*RolePermissions `json:"role_permissions,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool
 }
 
-// RolesOrErr returns the Roles value or an error if the edge
+// RolePermissionsOrErr returns the RolePermissions value or an error if the edge
 // was not loaded in eager-loading.
-func (e PermissionsEdges) RolesOrErr() ([]*Roles, error) {
+func (e PermissionsEdges) RolePermissionsOrErr() ([]*RolePermissions, error) {
 	if e.loadedTypes[0] {
-		return e.Roles, nil
+		return e.RolePermissions, nil
 	}
-	return nil, &NotLoadedError{edge: "roles"}
+	return nil, &NotLoadedError{edge: "role_permissions"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -54,9 +62,9 @@ func (*Permissions) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case permissions.FieldID:
 			values[i] = new(sql.NullInt64)
-		case permissions.FieldName, permissions.FieldDescription:
+		case permissions.FieldCode, permissions.FieldName, permissions.FieldDescription, permissions.FieldResource, permissions.FieldAction:
 			values[i] = new(sql.NullString)
-		case permissions.FieldCreatedAt:
+		case permissions.FieldCreatedAt, permissions.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -79,6 +87,12 @@ func (pe *Permissions) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			pe.ID = int(value.Int64)
+		case permissions.FieldCode:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field code", values[i])
+			} else if value.Valid {
+				pe.Code = value.String
+			}
 		case permissions.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
@@ -91,11 +105,29 @@ func (pe *Permissions) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				pe.Description = value.String
 			}
+		case permissions.FieldResource:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field resource", values[i])
+			} else if value.Valid {
+				pe.Resource = value.String
+			}
+		case permissions.FieldAction:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field action", values[i])
+			} else if value.Valid {
+				pe.Action = value.String
+			}
 		case permissions.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
 				pe.CreatedAt = value.Time
+			}
+		case permissions.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				pe.UpdatedAt = value.Time
 			}
 		default:
 			pe.selectValues.Set(columns[i], values[i])
@@ -110,9 +142,9 @@ func (pe *Permissions) Value(name string) (ent.Value, error) {
 	return pe.selectValues.Get(name)
 }
 
-// QueryRoles queries the "roles" edge of the Permissions entity.
-func (pe *Permissions) QueryRoles() *RolesQuery {
-	return NewPermissionsClient(pe.config).QueryRoles(pe)
+// QueryRolePermissions queries the "role_permissions" edge of the Permissions entity.
+func (pe *Permissions) QueryRolePermissions() *RolePermissionsQuery {
+	return NewPermissionsClient(pe.config).QueryRolePermissions(pe)
 }
 
 // Update returns a builder for updating this Permissions.
@@ -138,14 +170,26 @@ func (pe *Permissions) String() string {
 	var builder strings.Builder
 	builder.WriteString("Permissions(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pe.ID))
+	builder.WriteString("code=")
+	builder.WriteString(pe.Code)
+	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(pe.Name)
 	builder.WriteString(", ")
 	builder.WriteString("description=")
 	builder.WriteString(pe.Description)
 	builder.WriteString(", ")
+	builder.WriteString("resource=")
+	builder.WriteString(pe.Resource)
+	builder.WriteString(", ")
+	builder.WriteString("action=")
+	builder.WriteString(pe.Action)
+	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(pe.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(pe.UpdatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

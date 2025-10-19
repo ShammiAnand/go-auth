@@ -23,11 +23,8 @@ type Handler struct {
 	cache  *redis.Client
 	ctx    context.Context
 	logger *slog.Logger
-
-	// TODO: add an email client
 }
 
-// It creates a new Auth Handler with a Background context
 func NewHandler(client *ent.Client, cache *redis.Client) *Handler {
 	return &Handler{
 		client: client,
@@ -51,11 +48,8 @@ func (h *Handler) RegisterRoutes(router *http.ServeMux) {
 	router.HandleFunc("GET /auth/me", auth.WithJWTAuth(h.handleGetMe, h.cache))
 }
 
-// requires an auth token
 func (h *Handler) handleGetMe(w http.ResponseWriter, r *http.Request) {
 	userId := auth.GetUserIdFromContext(r.Context())
-	// get the info regarding this user from db
-
 	uuidUserId, err := uuid.Parse(userId)
 	if err != nil {
 		utils.WriteError(w, http.StatusNotFound, err)
@@ -69,7 +63,7 @@ func (h *Handler) handleGetMe(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusNotFound, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
+	utils.WriteJSON(w, http.StatusOK, map[string]any{
 		"id":         user.ID,
 		"email":      user.Email,
 		"created_at": user.CreatedAt.Local(),
@@ -78,10 +72,6 @@ func (h *Handler) handleGetMe(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// creates a new user entry in postgres,
-// sends a verification email
-// upon verification user can login to get the token?
-// for now allowing to login without email verification
 func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	var payload types.RegisterUserRequest
 
@@ -104,15 +94,12 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: send email verification to mark is_active field
-
 	utils.WriteJSON(w, http.StatusCreated, types.RegisterUserResponse{
 		ID:    user.ID,
 		Email: user.Email,
 	})
 }
 
-// this will verify the hashed password and generate a token
 func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 	var payload types.LoginUserRequest
 
@@ -135,7 +122,6 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// generate token
 	tokenString, err := auth.CreateJWT(user.ID, h.cache)
 	if err != nil {
 		utils.WriteError(w, http.StatusFailedDependency, err)
